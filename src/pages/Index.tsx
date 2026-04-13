@@ -8,10 +8,11 @@ import FlowSection from "@/components/FlowSection";
 import Testimonials from "@/components/Testimonials";
 import FinalCTA from "@/components/FinalCTA";
 import Footer from "@/components/Footer";
+import StickyMobileCTA from "@/components/StickyMobileCTA";
 
 const Index = () => {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen pb-16 md:pb-0">
       <Navbar />
       <HeroSection />
       <HowItWorks />
@@ -22,6 +23,7 @@ const Index = () => {
       <Testimonials />
       <FinalCTA />
       <Footer />
+      <StickyMobileCTA />
     </div>
   );
 };
