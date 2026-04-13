@@ -1,10 +1,14 @@
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ShieldCheck, Clock, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const FinalCTA = () => {
   return (
     <section className="section-padding" style={{ background: "var(--gradient-primary)" }}>
       <div className="container mx-auto text-center">
+        <div className="inline-flex items-center gap-2 bg-primary-foreground/20 text-primary-foreground rounded-full px-4 py-1.5 text-sm font-medium mb-6">
+          <Zap size={16} />
+          Registro gratuito — empieza en 2 minutos
+        </div>
         <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-primary-foreground mb-4">
           Empieza ahora con ObraRed
         </h2>
@@ -16,7 +20,7 @@ const FinalCTA = () => {
             size="lg"
             className="bg-card text-foreground hover:bg-card/90 gap-2 rounded-2xl px-8 py-6 text-base shadow-lg"
           >
-            Publicar trabajo
+            Publicar trabajo gratis
             <ArrowRight size={18} />
           </Button>
           <Button
@@ -26,6 +30,20 @@ const FinalCTA = () => {
           >
             Empezar a trabajar
           </Button>
+        </div>
+        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 mt-8 text-sm text-primary-foreground/70">
+          <div className="flex items-center gap-1.5">
+            <ShieldCheck size={14} />
+            Sin tarjeta de crédito
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Clock size={14} />
+            Cancela cuando quieras
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Zap size={14} />
+            Publicación instantánea
+          </div>
         </div>
       </div>
     </section>
