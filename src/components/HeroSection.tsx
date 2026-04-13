@@ -1,4 +1,4 @@
-import { ArrowRight, Search } from "lucide-react";
+import { ArrowRight, Search, ShieldCheck, Star, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import heroImg from "@/assets/hero-illustration.jpg";
 
@@ -22,7 +22,7 @@ const HeroSection = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <Button size="lg" className="text-base gap-2 px-8 py-6 rounded-2xl shadow-lg">
-                Publicar trabajo
+                Publicar trabajo gratis
                 <ArrowRight size={18} />
               </Button>
               <Button
@@ -34,21 +34,21 @@ const HeroSection = () => {
                 Encontrar trabajo
               </Button>
             </div>
-            <div className="flex items-center gap-4 pt-4">
-              <div className="flex -space-x-2">
-                {[1, 2, 3, 4].map((i) => (
-                  <div
-                    key={i}
-                    className="w-8 h-8 rounded-full bg-muted border-2 border-card flex items-center justify-center text-xs font-medium text-muted-foreground"
-                  >
-                    {String.fromCharCode(64 + i)}
-                  </div>
-                ))}
+
+            {/* Trust Signals */}
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-3 pt-4 text-sm text-muted-foreground">
+              <div className="flex items-center gap-1.5">
+                <ShieldCheck size={16} className="text-success" />
+                <span>Pago 100% seguro</span>
               </div>
-              <p className="text-sm text-muted-foreground">
-                <span className="font-semibold text-foreground">+2,500</span>{" "}
-                usuarios confían en ObraRed
-              </p>
+              <div className="flex items-center gap-1.5">
+                <Star size={16} className="text-warning" />
+                <span>4.9/5 satisfacción</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Users size={16} className="text-primary" />
+                <span className="font-semibold text-foreground">+2,500</span> usuarios activos
+              </div>
             </div>
           </div>
 
