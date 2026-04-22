@@ -1,20 +1,37 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Lock, User, ArrowLeft } from "lucide-react";
+import { useState, useMemo } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Lock, User, ArrowLeft, Hammer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth, HARDCODED_USERS } from "@/context/AuthContext";
+import type { UserRole } from "@/types/solicitud";
 
 const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { login } = useAuth();
+  const [params] = useSearchParams();
+  const roleParam = params.get("role") as UserRole | null;
+  const mode = params.get("mode") === "register" ? "register" : "login";
+  const selectedRole: UserRole | null =
+    roleParam === "cliente" || roleParam === "trabajador" || roleParam === "admin"
+      ? roleParam
+      : null;
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const visibleUsers = useMemo(
+    () => (selectedRole ? HARDCODED_USERS.filter((u) => u.role === selectedRole) : HARDCODED_USERS),
+    [selectedRole],
+  );
+
+  const roleLabel = selectedRole === "cliente" ? "Cliente" : selectedRole === "trabajador" ? "Trabajador" : null;
+  const RoleIcon = selectedRole === "trabajador" ? Hammer : User;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,6 +40,15 @@ const Login = () => {
     setTimeout(() => {
       const result = login(username, password);
       if (result.ok) {
+        if (selectedRole && result.role !== selectedRole) {
+          toast({
+            title: "Rol incorrecto",
+            description: `Esta cuenta no es de tipo ${roleLabel}.`,
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
         toast({
           title: "¡Bienvenido!",
           description: `Sesión iniciada como ${result.role}.`,
@@ -48,21 +74,32 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-gradient-hero">
       <div className="w-full max-w-md">
         <button
-          onClick={() => navigate("/")}
+          onClick={() => navigate(selectedRole ? `/acceso?mode=${mode}` : "/")}
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6 text-sm"
         >
           <ArrowLeft size={16} />
-          Volver al inicio
+          {selectedRole ? "Cambiar rol" : "Volver al inicio"}
         </button>
 
         <Card className="border-border shadow-elevated">
           <CardHeader className="space-y-3 text-center">
             <div className="mx-auto w-14 h-14 rounded-2xl bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-lg">OR</span>
+              <RoleIcon className="text-primary-foreground" size={26} strokeWidth={2.5} />
             </div>
-            <CardTitle className="text-2xl">Iniciar sesión</CardTitle>
+            <CardTitle className="text-2xl">
+              {mode === "register" ? "Crear cuenta" : "Iniciar sesión"}
+            </CardTitle>
             <CardDescription>
-              Accede a tu cuenta de Obra<span className="text-primary font-semibold">Red</span>
+              {roleLabel ? (
+                <>
+                  Acceso como <span className="text-primary font-semibold">{roleLabel}</span> en Obra
+                  <span className="text-primary font-semibold">Red</span>
+                </>
+              ) : (
+                <>
+                  Accede a tu cuenta de Obra<span className="text-primary font-semibold">Red</span>
+                </>
+              )}
             </CardDescription>
           </CardHeader>
 
@@ -109,7 +146,7 @@ const Login = () => {
               <div className="rounded-lg bg-muted/50 border border-border p-3 space-y-2">
                 <p className="text-xs font-medium text-foreground">Usuarios de prueba (clic para usar):</p>
                 <div className="grid gap-1.5">
-                  {HARDCODED_USERS.map((u) => (
+                  {visibleUsers.map((u) => (
                     <button
                       key={u.username}
                       type="button"

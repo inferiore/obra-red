@@ -38,10 +38,10 @@ const Navbar = () => {
 
         <div className="hidden md:flex items-center gap-3">
           <Button variant="ghost" size="sm" asChild>
-            <Link to="/login">Iniciar sesión</Link>
+            <Link to="/acceso?mode=login">Iniciar sesión</Link>
           </Button>
           <Button size="sm" asChild>
-            <Link to="/login">Registrarse</Link>
+            <Link to="/acceso?mode=register">Registrarse</Link>
           </Button>
         </div>
 
@@ -71,9 +71,11 @@ const Navbar = () => {
             ))}
             <div className="flex flex-col gap-2 pt-2 border-t border-border">
               <Button variant="ghost" className="justify-start" asChild>
-                <Link to="/login" onClick={() => setIsOpen(false)}>Iniciar sesión</Link>
+                <Link to="/acceso?mode=login" onClick={() => setIsOpen(false)}>Iniciar sesión</Link>
               </Button>
-              <Button className="w-full">Registrarse</Button>
+              <Button className="w-full" asChild>
+                <Link to="/acceso?mode=register" onClick={() => setIsOpen(false)}>Registrarse</Link>
+              </Button>
             </div>
           </div>
         </div>

@@ -40,6 +40,8 @@
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 55%;
     --warning-foreground: 0 0% 100%;
+    --info: 222 89% 55%;
+    --info-foreground: 0 0% 100%;
 
     --gradient-primary: linear-gradient(135deg, hsl(24, 85%, 52%), hsl(30, 90%, 58%));
     --gradient-accent: linear-gradient(135deg, hsl(152, 60%, 45%), hsl(152, 70%, 55%));
