@@ -146,7 +146,7 @@ const Login = () => {
               <div className="rounded-lg bg-muted/50 border border-border p-3 space-y-2">
                 <p className="text-xs font-medium text-foreground">Usuarios de prueba (clic para usar):</p>
                 <div className="grid gap-1.5">
-                  {HARDCODED_USERS.map((u) => (
+                  {visibleUsers.map((u) => (
                     <button
                       key={u.username}
                       type="button"
