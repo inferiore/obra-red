@@ -1,20 +1,37 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Lock, User, ArrowLeft } from "lucide-react";
+import { useState, useMemo } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Lock, User, ArrowLeft, Hammer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth, HARDCODED_USERS } from "@/context/AuthContext";
+import type { UserRole } from "@/types/solicitud";
 
 const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { login } = useAuth();
+  const [params] = useSearchParams();
+  const roleParam = params.get("role") as UserRole | null;
+  const mode = params.get("mode") === "register" ? "register" : "login";
+  const selectedRole: UserRole | null =
+    roleParam === "cliente" || roleParam === "trabajador" || roleParam === "admin"
+      ? roleParam
+      : null;
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const visibleUsers = useMemo(
+    () => (selectedRole ? HARDCODED_USERS.filter((u) => u.role === selectedRole) : HARDCODED_USERS),
+    [selectedRole],
+  );
+
+  const roleLabel = selectedRole === "cliente" ? "Cliente" : selectedRole === "trabajador" ? "Trabajador" : null;
+  const RoleIcon = selectedRole === "trabajador" ? Hammer : User;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
