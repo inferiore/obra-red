@@ -80,31 +80,22 @@ const Dashboard = () => {
   const [filter, setFilter] = useState<SolicitudEstado | "todas">("todas");
   const [search, setSearch] = useState("");
 
-  if (!user) {
-    navigate("/login");
-    return null;
-  }
-
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
-
-  const isCliente = user.role === "cliente";
-  const isTrabajador = user.role === "trabajador";
+  const isCliente = user?.role === "cliente";
+  const isTrabajador = user?.role === "trabajador";
+  const username = user?.username ?? "";
 
   const baseList = useMemo(() => {
-    if (isCliente) return porUsuario(user.username);
+    if (!user) return [];
+    if (isCliente) return porUsuario(username);
     if (isTrabajador) {
-      // Trabajador ve publicadas + las que está ejecutando
       return solicitudes.filter(
         (s) =>
           s.estado === "publicado" ||
-          (s.trabajadorAsignado === user.username && s.estado !== "borrador"),
+          (s.trabajadorAsignado === username && s.estado !== "borrador"),
       );
     }
     return solicitudes;
-  }, [isCliente, isTrabajador, porUsuario, solicitudes, user.username]);
+  }, [user, isCliente, isTrabajador, porUsuario, solicitudes, username]);
 
   const filtered = useMemo(() => {
     return baseList.filter((s) => {
