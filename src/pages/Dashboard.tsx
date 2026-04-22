@@ -84,6 +84,21 @@ const Dashboard = () => {
   const isTrabajador = user?.role === "trabajador";
   const username = user?.username ?? "";
 
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
+
+  const tomar = (id: string) => {
+    actualizarEstado(id, "ejecucion", username);
+    toast({ title: "Trabajo aceptado", description: "La solicitud está en ejecución." });
+  };
+
+  const finalizar = (id: string) => {
+    actualizarEstado(id, "finalizado");
+    toast({ title: "Trabajo finalizado", description: "El pago en escrow será liberado." });
+  };
+
   const baseList = useMemo(() => {
     if (!user) return [];
     if (isCliente) return porUsuario(username);
