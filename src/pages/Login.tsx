@@ -40,6 +40,15 @@ const Login = () => {
     setTimeout(() => {
       const result = login(username, password);
       if (result.ok) {
+        if (selectedRole && result.role !== selectedRole) {
+          toast({
+            title: "Rol incorrecto",
+            description: `Esta cuenta no es de tipo ${roleLabel}.`,
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
         toast({
           title: "¡Bienvenido!",
           description: `Sesión iniciada como ${result.role}.`,
@@ -65,21 +74,32 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-gradient-hero">
       <div className="w-full max-w-md">
         <button
-          onClick={() => navigate("/")}
+          onClick={() => navigate(selectedRole ? `/acceso?mode=${mode}` : "/")}
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6 text-sm"
         >
           <ArrowLeft size={16} />
-          Volver al inicio
+          {selectedRole ? "Cambiar rol" : "Volver al inicio"}
         </button>
 
         <Card className="border-border shadow-elevated">
           <CardHeader className="space-y-3 text-center">
             <div className="mx-auto w-14 h-14 rounded-2xl bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-lg">OR</span>
+              <RoleIcon className="text-primary-foreground" size={26} strokeWidth={2.5} />
             </div>
-            <CardTitle className="text-2xl">Iniciar sesión</CardTitle>
+            <CardTitle className="text-2xl">
+              {mode === "register" ? "Crear cuenta" : "Iniciar sesión"}
+            </CardTitle>
             <CardDescription>
-              Accede a tu cuenta de Obra<span className="text-primary font-semibold">Red</span>
+              {roleLabel ? (
+                <>
+                  Acceso como <span className="text-primary font-semibold">{roleLabel}</span> en Obra
+                  <span className="text-primary font-semibold">Red</span>
+                </>
+              ) : (
+                <>
+                  Accede a tu cuenta de Obra<span className="text-primary font-semibold">Red</span>
+                </>
+              )}
             </CardDescription>
           </CardHeader>
 
