@@ -50,7 +50,7 @@ const RoleSelect = () => {
         <div className="space-y-4">
           <button
             onClick={() => goTo("cliente")}
-            className="w-full h-16 rounded-2xl bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold text-lg flex items-center justify-center gap-3 shadow-card hover:shadow-elevated transition-all active:scale-[0.98]"
+            className="w-full h-16 rounded-2xl bg-info hover:bg-info/90 text-info-foreground font-semibold text-lg flex items-center justify-center gap-3 shadow-card hover:shadow-elevated transition-all active:scale-[0.98]"
           >
             <User size={22} strokeWidth={2.5} />
             Soy Cliente

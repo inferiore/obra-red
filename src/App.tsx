@@ -8,6 +8,7 @@ import { SolicitudesProvider } from "@/context/SolicitudesContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index.tsx";
 import Login from "./pages/Login.tsx";
+import RoleSelect from "./pages/RoleSelect.tsx";
 import Dashboard from "./pages/Dashboard.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
@@ -23,6 +24,7 @@ const App = () => (
           <SolicitudesProvider>
             <Routes>
               <Route path="/" element={<Index />} />
+              <Route path="/acceso" element={<RoleSelect />} />
               <Route path="/login" element={<Login />} />
               <Route
                 path="/dashboard"
