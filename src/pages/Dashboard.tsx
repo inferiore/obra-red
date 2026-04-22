@@ -131,15 +131,9 @@ const Dashboard = () => {
     finalizado: baseList.filter((s) => s.estado === "finalizado").length,
   };
 
-  const tomar = (id: string) => {
-    actualizarEstado(id, "ejecucion", user.username);
-    toast({ title: "Trabajo aceptado", description: "La solicitud está en ejecución." });
-  };
-
-  const finalizar = (id: string) => {
-    actualizarEstado(id, "finalizado");
-    toast({ title: "Trabajo finalizado", description: "El pago en escrow será liberado." });
-  };
+  if (!user) {
+    return <div />;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-hero">

@@ -6,14 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-
-// Hardcoded credentials (no backend)
-const DEFAULT_USER = "admin";
-const DEFAULT_PASS = "admin123";
+import { useAuth, HARDCODED_USERS } from "@/context/AuthContext";
 
 const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { login } = useAuth();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -23,22 +21,27 @@ const Login = () => {
     setLoading(true);
 
     setTimeout(() => {
-      if (username === DEFAULT_USER && password === DEFAULT_PASS) {
+      const result = login(username, password);
+      if (result.ok) {
         toast({
           title: "¡Bienvenido!",
-          description: "Inicio de sesión exitoso.",
+          description: `Sesión iniciada como ${result.role}.`,
         });
-        sessionStorage.setItem("obrared_auth", "true");
-        navigate("/");
+        navigate("/dashboard");
       } else {
         toast({
           title: "Credenciales incorrectas",
-          description: "Verifica tu usuario y contraseña.",
+          description: result.error ?? "Verifica tu usuario y contraseña.",
           variant: "destructive",
         });
       }
       setLoading(false);
-    }, 400);
+    }, 300);
+  };
+
+  const quickLogin = (u: string, p: string) => {
+    setUsername(u);
+    setPassword(p);
   };
 
   return (
@@ -72,7 +75,7 @@ const Login = () => {
                   <Input
                     id="username"
                     type="text"
-                    placeholder="admin"
+                    placeholder="cliente"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     className="pl-10 h-11"
@@ -103,18 +106,24 @@ const Login = () => {
                 {loading ? "Ingresando..." : "Iniciar sesión"}
               </Button>
 
-              <div className="rounded-lg bg-muted/50 border border-border px-4 py-3 text-xs text-muted-foreground">
-                <p className="font-medium text-foreground mb-1">Credenciales de prueba:</p>
-                <p>Usuario: <span className="font-mono text-primary">admin</span></p>
-                <p>Contraseña: <span className="font-mono text-primary">admin123</span></p>
+              <div className="rounded-lg bg-muted/50 border border-border p-3 space-y-2">
+                <p className="text-xs font-medium text-foreground">Usuarios de prueba (clic para usar):</p>
+                <div className="grid gap-1.5">
+                  {HARDCODED_USERS.map((u) => (
+                    <button
+                      key={u.username}
+                      type="button"
+                      onClick={() => quickLogin(u.username, u.password)}
+                      className="flex items-center justify-between text-xs px-2 py-1.5 rounded-md hover:bg-card border border-transparent hover:border-border transition-colors"
+                    >
+                      <span className="capitalize font-medium text-foreground">{u.role}</span>
+                      <span className="font-mono text-muted-foreground">
+                        {u.username} / {u.password}
+                      </span>
+                    </button>
+                  ))}
+                </div>
               </div>
-
-              <p className="text-center text-sm text-muted-foreground">
-                ¿No tienes cuenta?{" "}
-                <a href="#" className="text-primary font-medium hover:underline">
-                  Regístrate
-                </a>
-              </p>
             </form>
           </CardContent>
         </Card>
@@ -124,3 +133,4 @@ const Login = () => {
 };
 
 export default Login;
+

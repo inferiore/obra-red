@@ -40,7 +40,9 @@ const Navbar = () => {
           <Button variant="ghost" size="sm" asChild>
             <Link to="/login">Iniciar sesión</Link>
           </Button>
-          <Button size="sm">Registrarse</Button>
+          <Button size="sm" asChild>
+            <Link to="/login">Registrarse</Link>
+          </Button>
         </div>
 
         {/* Mobile Toggle */}
