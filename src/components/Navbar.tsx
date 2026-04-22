@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -36,8 +37,8 @@ const Navbar = () => {
         </div>
 
         <div className="hidden md:flex items-center gap-3">
-          <Button variant="ghost" size="sm">
-            Iniciar sesión
+          <Button variant="ghost" size="sm" asChild>
+            <Link to="/login">Iniciar sesión</Link>
           </Button>
           <Button size="sm">Registrarse</Button>
         </div>
@@ -67,8 +68,8 @@ const Navbar = () => {
               </a>
             ))}
             <div className="flex flex-col gap-2 pt-2 border-t border-border">
-              <Button variant="ghost" className="justify-start">
-                Iniciar sesión
+              <Button variant="ghost" className="justify-start" asChild>
+                <Link to="/login" onClick={() => setIsOpen(false)}>Iniciar sesión</Link>
               </Button>
               <Button className="w-full">Registrarse</Button>
             </div>
