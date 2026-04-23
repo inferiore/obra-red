@@ -281,7 +281,7 @@ const Dashboard = () => {
                   icon: <Send size={14} />,
                 };
               }
-              return <SolicitudCard key={s.id} s={s} action={action} />;
+              return <SolicitudCard key={s.id} s={s} action={action} showCliente={!isCliente} />;
             })}
           </div>
         )}
