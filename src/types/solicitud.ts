@@ -41,6 +41,7 @@ export interface Solicitud {
   tipo: TipoTrabajo;
   descripcion: string;
   presupuesto: number;
+  ubicacion: string;
   fotos: string[]; // data URLs
   estado: SolicitudEstado;
   trabajadorAsignado?: string;

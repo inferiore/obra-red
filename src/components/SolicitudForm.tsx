@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Camera, X } from "lucide-react";
+import { Camera, X, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,6 +30,7 @@ export const SolicitudForm = ({ onClose }: Props) => {
   const [tipo, setTipo] = useState<TipoTrabajo | "">("");
   const [descripcion, setDescripcion] = useState("");
   const [presupuesto, setPresupuesto] = useState("");
+  const [ubicacion, setUbicacion] = useState("");
   const [fotos, setFotos] = useState<string[]>([]);
 
   const handleFotos = (files: FileList | null) => {
@@ -59,6 +60,14 @@ export const SolicitudForm = ({ onClose }: Props) => {
       });
       return;
     }
+    if (!ubicacion.trim() || ubicacion.trim().length < 5) {
+      toast({
+        title: "Ubicación inválida",
+        description: "Indica la dirección exacta del servicio (mínimo 5 caracteres).",
+        variant: "destructive",
+      });
+      return;
+    }
     const presupuestoNum = Number(presupuesto);
     if (isNaN(presupuestoNum) || presupuestoNum <= 0) {
       toast({ title: "Presupuesto inválido", variant: "destructive" });
@@ -71,6 +80,7 @@ export const SolicitudForm = ({ onClose }: Props) => {
       tipo: tipo as TipoTrabajo,
       descripcion: descripcion.trim(),
       presupuesto: presupuestoNum,
+      ubicacion: ubicacion.trim(),
       fotos,
       estado,
     });
@@ -128,6 +138,28 @@ export const SolicitudForm = ({ onClose }: Props) => {
         />
         <p className="text-xs text-muted-foreground">
           Monto que estás dispuesto a pagar. Se retiene en escrow al aceptar oferta.
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="ubicacion">Ubicación exacta del servicio *</Label>
+        <div className="relative">
+          <MapPin
+            size={16}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+          />
+          <Input
+            id="ubicacion"
+            type="text"
+            placeholder="Ej: Barrio Manga, Cra 21 #29-45, Cartagena"
+            value={ubicacion}
+            onChange={(e) => setUbicacion(e.target.value)}
+            className="h-11 pl-9"
+            maxLength={150}
+          />
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Indica barrio, dirección y referencias para que el trabajador pueda llegar fácilmente.
         </p>
       </div>
 
