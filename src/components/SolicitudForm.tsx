@@ -142,6 +142,29 @@ export const SolicitudForm = ({ onClose }: Props) => {
       </div>
 
       <div className="space-y-2">
+      <div className="space-y-2">
+        <Label htmlFor="ubicacion">Ubicación exacta del servicio *</Label>
+        <div className="relative">
+          <MapPin
+            size={16}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+          />
+          <Input
+            id="ubicacion"
+            type="text"
+            placeholder="Ej: Barrio Manga, Cra 21 #29-45, Cartagena"
+            value={ubicacion}
+            onChange={(e) => setUbicacion(e.target.value)}
+            className="h-11 pl-9"
+            maxLength={150}
+          />
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Indica barrio, dirección y referencias para que el trabajador pueda llegar fácilmente.
+        </p>
+      </div>
+
+      <div className="space-y-2">
         <Label>Fotos del inicio del trabajo ({fotos.length}/{MAX_FOTOS})</Label>
         <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
           {fotos.map((src, i) => (
