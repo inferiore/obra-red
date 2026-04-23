@@ -145,10 +145,9 @@ const Perfil = () => {
   const [notifEmail, setNotifEmail] = useState(true);
   const [notifPush, setNotifPush] = useState(true);
 
-  if (!user) return <div />;
-
-  const isCliente = user.role === "cliente";
-  const isTrabajador = user.role === "trabajador";
+  const isCliente = user?.role === "cliente";
+  const isTrabajador = user?.role === "trabajador";
+  const username = user?.username ?? "";
 
   const handleLogout = () => {
     logout();
@@ -157,8 +156,8 @@ const Perfil = () => {
 
   /* ----- Cliente data ----- */
   const misSolicitudes = useMemo(
-    () => (isCliente ? porUsuario(user.username) : []),
-    [isCliente, porUsuario, user.username],
+    () => (isCliente ? porUsuario(username) : []),
+    [isCliente, porUsuario, username],
   );
   const clienteStats = {
     publicados: misSolicitudes.length,
