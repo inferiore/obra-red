@@ -60,6 +60,14 @@ export const SolicitudForm = ({ onClose }: Props) => {
       });
       return;
     }
+    if (!ubicacion.trim() || ubicacion.trim().length < 5) {
+      toast({
+        title: "Ubicación inválida",
+        description: "Indica la dirección exacta del servicio (mínimo 5 caracteres).",
+        variant: "destructive",
+      });
+      return;
+    }
     const presupuestoNum = Number(presupuesto);
     if (isNaN(presupuestoNum) || presupuestoNum <= 0) {
       toast({ title: "Presupuesto inválido", variant: "destructive" });
@@ -72,6 +80,7 @@ export const SolicitudForm = ({ onClose }: Props) => {
       tipo: tipo as TipoTrabajo,
       descripcion: descripcion.trim(),
       presupuesto: presupuestoNum,
+      ubicacion: ubicacion.trim(),
       fotos,
       estado,
     });
