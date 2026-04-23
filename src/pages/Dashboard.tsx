@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { LogOut, Plus, Search, MapPin, DollarSign, CheckCircle2, Send, UserCircle } from "lucide-react";
+import logo from "@/assets/obrared-logo.png";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -148,9 +149,7 @@ const Dashboard = () => {
       <header className="bg-card border-b border-border sticky top-0 z-40">
         <div className="container mx-auto flex items-center justify-between h-16 px-4">
           <button onClick={() => navigate("/")} className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">OR</span>
-            </div>
+            <img src={logo} alt="ObraRed" className="w-9 h-9 rounded-lg object-cover" />
             <span className="text-lg font-bold">
               Obra<span className="text-primary">Red</span>
             </span>
