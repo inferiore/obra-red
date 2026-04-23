@@ -142,7 +142,6 @@ export const SolicitudForm = ({ onClose }: Props) => {
       </div>
 
       <div className="space-y-2">
-      <div className="space-y-2">
         <Label htmlFor="ubicacion">Ubicación exacta del servicio *</Label>
         <div className="relative">
           <MapPin
