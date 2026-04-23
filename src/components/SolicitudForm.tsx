@@ -30,6 +30,7 @@ export const SolicitudForm = ({ onClose }: Props) => {
   const [tipo, setTipo] = useState<TipoTrabajo | "">("");
   const [descripcion, setDescripcion] = useState("");
   const [presupuesto, setPresupuesto] = useState("");
+  const [ubicacion, setUbicacion] = useState("");
   const [fotos, setFotos] = useState<string[]>([]);
 
   const handleFotos = (files: FileList | null) => {
