@@ -180,10 +180,12 @@ const Perfil = () => {
   const trabajosTrabajador = useMemo(
     () =>
       isTrabajador
-        ? solicitudes.filter((s) => s.trabajadorAsignado === user.username)
+        ? solicitudes.filter((s) => s.trabajadorAsignado === username)
         : [],
-    [isTrabajador, solicitudes, user.username],
+    [isTrabajador, solicitudes, username],
   );
+
+  if (!user) return <div />;
   const trabajadorStats = {
     completados: trabajosTrabajador.filter((s) => s.estado === "finalizado").length,
     activos: trabajosTrabajador.filter((s) => s.estado === "ejecucion").length,
