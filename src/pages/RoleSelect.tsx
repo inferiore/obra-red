@@ -1,5 +1,6 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Hammer, User } from "lucide-react";
+import logo from "@/assets/obrared-logo.png";
 
 const RoleSelect = () => {
   const navigate = useNavigate();
@@ -29,8 +30,8 @@ const RoleSelect = () => {
 
         {/* Brand */}
         <div className="flex flex-col items-center text-center mb-12">
-          <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-elevated mb-6">
-            <Hammer className="text-primary-foreground" size={44} strokeWidth={2.5} />
+          <div className="w-24 h-24 rounded-3xl overflow-hidden shadow-elevated mb-6">
+            <img src={logo} alt="ObraRed" className="w-full h-full object-cover" />
           </div>
           <h1 className="text-5xl font-bold text-primary tracking-tight">
             ObraRed

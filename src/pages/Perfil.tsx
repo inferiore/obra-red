@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import logo from "@/assets/obrared-logo.png";
 import {
   ArrowLeft,
   Bell,
@@ -216,9 +217,7 @@ const Perfil = () => {
             <span className="hidden sm:inline">Volver al panel</span>
           </button>
           <button onClick={() => navigate("/")} className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">OR</span>
-            </div>
+            <img src={logo} alt="ObraRed" className="w-9 h-9 rounded-lg object-cover" />
             <span className="text-lg font-bold">
               Obra<span className="text-primary">Red</span>
             </span>

@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Lock, User, ArrowLeft, Hammer } from "lucide-react";
+import logo from "@/assets/obrared-logo.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -83,8 +84,8 @@ const Login = () => {
 
         <Card className="border-border shadow-elevated">
           <CardHeader className="space-y-3 text-center">
-            <div className="mx-auto w-14 h-14 rounded-2xl bg-primary flex items-center justify-center">
-              <RoleIcon className="text-primary-foreground" size={26} strokeWidth={2.5} />
+            <div className="mx-auto w-16 h-16 rounded-2xl overflow-hidden shadow-elevated">
+              <img src={logo} alt="ObraRed" className="w-full h-full object-cover" />
             </div>
             <CardTitle className="text-2xl">
               {mode === "register" ? "Crear cuenta" : "Iniciar sesión"}
