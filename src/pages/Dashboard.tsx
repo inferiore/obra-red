@@ -33,9 +33,11 @@ const formatCOP = (n: number) =>
 const SolicitudCard = ({
   s,
   action,
+  showCliente = false,
 }: {
   s: Solicitud;
   action?: { label: string; onClick: () => void; icon?: React.ReactNode };
+  showCliente?: boolean;
 }) => (
   <Card className="hover:shadow-elevated transition-shadow">
     <CardHeader className="pb-3">
@@ -44,6 +46,11 @@ const SolicitudCard = ({
           <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
             {tipoLabel(s.tipo)}
           </p>
+          {showCliente && (
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Cliente: <span className="font-medium text-foreground">{s.clienteNombre}</span>
+            </p>
+          )}
           <CardTitle className="text-base mt-1 line-clamp-1">{s.descripcion}</CardTitle>
         </div>
         <EstadoBadge estado={s.estado} />
@@ -51,14 +58,14 @@ const SolicitudCard = ({
     </CardHeader>
     <CardContent className="space-y-3">
       <p className="text-sm text-muted-foreground line-clamp-2">{s.descripcion}</p>
-      <div className="flex flex-wrap items-center gap-3 text-sm">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
         <span className="inline-flex items-center gap-1 text-foreground font-semibold">
           <DollarSign size={14} className="text-primary" />
           {formatCOP(s.presupuesto)}
         </span>
-        <span className="inline-flex items-center gap-1 text-muted-foreground">
-          <MapPin size={14} />
-          {s.clienteNombre}
+        <span className="inline-flex items-center gap-1 text-muted-foreground min-w-0 max-w-full">
+          <MapPin size={14} className="shrink-0" />
+          <span className="line-clamp-1">{s.ubicacion}</span>
         </span>
       </div>
       {action && (
