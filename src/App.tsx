@@ -11,6 +11,7 @@ import Login from "./pages/Login.tsx";
 import RoleSelect from "./pages/RoleSelect.tsx";
 import Dashboard from "./pages/Dashboard.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import Perfil from "./pages/Perfil.tsx";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +32,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/perfil"
+                element={
+                  <ProtectedRoute>
+                    <Perfil />
                   </ProtectedRoute>
                 }
               />
