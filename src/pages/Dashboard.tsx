@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { LogOut, Plus, Search, MapPin, DollarSign, CheckCircle2, Send } from "lucide-react";
+import { LogOut, Plus, Search, MapPin, DollarSign, CheckCircle2, Send, UserCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -155,11 +155,18 @@ const Dashboard = () => {
               Obra<span className="text-primary">Red</span>
             </span>
           </button>
-          <div className="flex items-center gap-3">
-            <div className="hidden sm:block text-right">
-              <p className="text-sm font-medium leading-tight">{user.name}</p>
-              <p className="text-xs text-muted-foreground capitalize">{user.role}</p>
-            </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigate("/perfil")}
+              className="hidden sm:flex flex-col items-end text-right hover:opacity-80 transition-opacity"
+            >
+              <span className="text-sm font-medium leading-tight">{user.name}</span>
+              <span className="text-xs text-muted-foreground capitalize">{user.role}</span>
+            </button>
+            <Button variant="outline" size="sm" onClick={() => navigate("/perfil")}>
+              <UserCircle size={16} />
+              <span className="hidden sm:inline">Mi perfil</span>
+            </Button>
             <Button variant="ghost" size="sm" onClick={handleLogout}>
               <LogOut size={16} />
               <span className="hidden sm:inline">Salir</span>
