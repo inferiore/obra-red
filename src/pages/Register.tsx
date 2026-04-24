@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import LegalDialog from "@/components/LegalDialog";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 import {
@@ -208,6 +209,7 @@ const Register = () => {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const [legalOpen, setLegalOpen] = useState<null | "terminos" | "privacidad">(null);
 
   const strength = useMemo(() => passwordStrength(password), [password]);
 
@@ -764,20 +766,36 @@ const Register = () => {
 
           {/* ============= Términos y CTA ============= */}
           <div className="space-y-4">
-            <label className="flex items-start gap-3 p-4 rounded-xl border border-border bg-card hover:bg-muted/30 transition-colors cursor-pointer">
+            <div className="flex items-start gap-3 p-4 rounded-xl border border-border bg-card hover:bg-muted/30 transition-colors">
               <Checkbox
+                id="terminos-check"
                 checked={terminos}
                 onCheckedChange={(v) => setTerminos(Boolean(v))}
                 className="mt-0.5"
               />
-              <span className="text-sm text-foreground">
+              <Label
+                htmlFor="terminos-check"
+                className="text-sm text-foreground font-normal cursor-pointer leading-relaxed"
+              >
                 Acepto los{" "}
-                <span className="text-primary font-medium underline">términos y condiciones</span>{" "}
+                <button
+                  type="button"
+                  onClick={() => setLegalOpen("terminos")}
+                  className="text-primary font-medium underline underline-offset-2 hover:text-primary/80 transition-colors"
+                >
+                  términos y condiciones
+                </button>{" "}
                 y la{" "}
-                <span className="text-primary font-medium underline">política de privacidad</span>{" "}
+                <button
+                  type="button"
+                  onClick={() => setLegalOpen("privacidad")}
+                  className="text-primary font-medium underline underline-offset-2 hover:text-primary/80 transition-colors"
+                >
+                  política de privacidad
+                </button>{" "}
                 de ObraRed.
-              </span>
-            </label>
+              </Label>
+            </div>
             <FieldError msg={errors.terminos} />
 
             <Button
@@ -817,6 +835,14 @@ const Register = () => {
           </div>
         </form>
       </div>
+
+      <LegalDialog
+        type={legalOpen ?? "terminos"}
+        open={legalOpen !== null}
+        onOpenChange={(open) => {
+          if (!open) setLegalOpen(null);
+        }}
+      />
     </div>
   );
 };
