@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
 import type { AuthUser, UserRole } from "@/types/solicitud";
 
 // Hardcoded users (sin backend)
@@ -7,6 +7,9 @@ export const HARDCODED_USERS: AuthUser[] = [
   { username: "trabajador", password: "trabajador123", name: "Tomás Trabajador", role: "trabajador" },
   { username: "admin", password: "admin123", name: "Admin ObraRed", role: "admin" },
 ];
+
+const REGISTERED_KEY = "obrared_registered_users";
+const STORAGE_KEY = "obrared_session";
 
 interface SessionUser {
   username: string;
@@ -18,11 +21,23 @@ interface AuthContextValue {
   user: SessionUser | null;
   login: (username: string, password: string) => { ok: boolean; error?: string; role?: UserRole };
   logout: () => void;
+  register: (data: AuthUser) => { ok: boolean; error?: string };
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-const STORAGE_KEY = "obrared_session";
+const getRegistered = (): AuthUser[] => {
+  try {
+    const raw = localStorage.getItem(REGISTERED_KEY);
+    return raw ? (JSON.parse(raw) as AuthUser[]) : [];
+  } catch {
+    return [];
+  }
+};
+
+const saveRegistered = (users: AuthUser[]) => {
+  localStorage.setItem(REGISTERED_KEY, JSON.stringify(users));
+};
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<SessionUser | null>(null);
@@ -38,10 +53,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
+  const findUser = (username: string, password: string): AuthUser | undefined => {
+    const all = [...HARDCODED_USERS, ...getRegistered()];
+    return all.find((u) => u.username === username.trim() && u.password === password);
+  };
+
   const login: AuthContextValue["login"] = (username, password) => {
-    const found = HARDCODED_USERS.find(
-      (u) => u.username === username.trim() && u.password === password,
-    );
+    const found = findUser(username, password);
     if (!found) return { ok: false, error: "Credenciales incorrectas" };
     const session: SessionUser = { username: found.username, name: found.name, role: found.role };
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(session));
@@ -54,7 +72,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(null);
   };
 
-  return <AuthContext.Provider value={{ user, login, logout }}>{children}</AuthContext.Provider>;
+  const register = useCallback<AuthContextValue["register"]>((data) => {
+    const all = [...HARDCODED_USERS, ...getRegistered()];
+    const username = data.username.trim().toLowerCase();
+    if (all.some((u) => u.username.toLowerCase() === username)) {
+      return { ok: false, error: "El nombre de usuario ya está en uso" };
+    }
+    if (data.email && all.some((u) => u.email?.toLowerCase() === data.email!.toLowerCase())) {
+      return { ok: false, error: "El correo ya está registrado" };
+    }
+    const newUser: AuthUser = { ...data, username };
+    saveRegistered([...getRegistered(), newUser]);
+    // Auto-login
+    const session: SessionUser = { username: newUser.username, name: newUser.name, role: newUser.role };
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+    setUser(session);
+    return { ok: true };
+  }, []);
+
+  return (
+    <AuthContext.Provider value={{ user, login, logout, register }}>{children}</AuthContext.Provider>
+  );
 };
 
 export const useAuth = () => {
