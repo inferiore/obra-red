@@ -14,7 +14,11 @@ const RoleSelect = () => {
       : "Elige cómo quieres acceder";
 
   const goTo = (role: "cliente" | "trabajador") => {
-    navigate(`/login?role=${role}&mode=${mode}`);
+    if (mode === "register") {
+      navigate(`/registro?role=${role}`);
+    } else {
+      navigate(`/login?role=${role}&mode=login`);
+    }
   };
 
   return (

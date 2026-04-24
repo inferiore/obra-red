@@ -5,6 +5,22 @@ export interface AuthUser {
   password: string;
   name: string;
   role: UserRole;
+  // Datos de perfil opcionales (registrados desde el formulario)
+  email?: string;
+  telefono?: string;
+  documento?: string;
+  // Cliente
+  tipoCliente?: "natural" | "empresa";
+  razonSocial?: string;
+  nit?: string;
+  direccion?: string;
+  barrio?: string;
+  // Trabajador
+  especialidad?: string;
+  especialidadesExtra?: string[];
+  experiencia?: number;
+  descripcionProfesional?: string;
+  zonasCobertura?: string[];
 }
 
 export type SolicitudEstado = "borrador" | "publicado" | "ejecucion" | "finalizado";
