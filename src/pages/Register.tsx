@@ -786,13 +786,14 @@ const Register = () => {
                   términos y condiciones
                 </button>{" "}
                 y la{" "}
-                <button
-                  type="button"
-                  onClick={() => setLegalOpen("privacidad")}
+                <Link
+                  to="/privacidad"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="text-primary font-medium underline underline-offset-2 hover:text-primary/80 transition-colors"
                 >
                   política de privacidad
-                </button>{" "}
+                </Link>{" "}
                 de ObraRed.
               </Label>
             </div>
