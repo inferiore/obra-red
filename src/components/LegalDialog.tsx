@@ -152,7 +152,7 @@ const LegalDialog = ({ type, open, onOpenChange }: LegalDialogProps) => {
           </div>
         </ScrollArea>
 
-        <div className="px-6 py-4 border-t bg-muted/20">
+        <div className="px-6 py-4 border-t bg-muted/20 shrink-0">
           <Button
             type="button"
             className="w-full"
