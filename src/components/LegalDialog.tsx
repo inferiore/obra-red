@@ -101,8 +101,8 @@ const LegalDialog = ({ type, open, onOpenChange }: LegalDialogProps) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl p-0 gap-0 overflow-hidden max-h-[90vh] flex flex-col">
-        <DialogHeader className="px-6 pt-6 pb-4 border-b">
+      <DialogContent className="max-w-2xl p-0 gap-0 overflow-hidden h-[85vh] sm:h-auto sm:max-h-[85vh] grid-rows-[auto_1fr_auto] grid">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
               <Icon size={20} className="text-primary" />
@@ -116,7 +116,7 @@ const LegalDialog = ({ type, open, onOpenChange }: LegalDialogProps) => {
           </div>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 px-6 py-4">
+        <ScrollArea className="min-h-0 px-6 py-4">
           <div className="space-y-4">
             {items.map((item) => (
               <div
@@ -152,7 +152,7 @@ const LegalDialog = ({ type, open, onOpenChange }: LegalDialogProps) => {
           </div>
         </ScrollArea>
 
-        <div className="px-6 py-4 border-t bg-muted/20">
+        <div className="px-6 py-4 border-t bg-muted/20 shrink-0">
           <Button
             type="button"
             className="w-full"
