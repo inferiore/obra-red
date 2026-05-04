@@ -299,11 +299,25 @@ const Dashboard = () => {
                   icon: <Send size={14} />,
                 };
               }
-              return <SolicitudCard key={s.id} s={s} action={action} showCliente={!isCliente} />;
+              return (
+                <SolicitudCard
+                  key={s.id}
+                  s={s}
+                  action={action}
+                  showCliente={!isCliente}
+                  onVerMas={isTrabajador ? () => setDetalle(s) : undefined}
+                />
+              );
             })}
           </div>
         )}
       </main>
+
+      <SolicitudDetailDialog
+        solicitud={detalle}
+        open={!!detalle}
+        onOpenChange={(v) => !v && setDetalle(null)}
+      />
     </div>
   );
 };
