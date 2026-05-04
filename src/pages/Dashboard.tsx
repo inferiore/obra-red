@@ -118,6 +118,7 @@ const Dashboard = () => {
   const [filter, setFilter] = useState<SolicitudEstado | "todas">("todas");
   const [search, setSearch] = useState("");
   const [detalle, setDetalle] = useState<Solicitud | null>(null);
+  const [ofertasOf, setOfertasOf] = useState<Solicitud | null>(null);
 
   const isCliente = user?.role === "cliente";
   const isTrabajador = user?.role === "trabajador";
