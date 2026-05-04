@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { LogOut, Plus, Search, MapPin, DollarSign, CheckCircle2, Send, UserCircle } from "lucide-react";
+import { LogOut, Plus, Search, MapPin, DollarSign, CheckCircle2, Send, UserCircle, Eye } from "lucide-react";
+import { SolicitudDetailDialog } from "@/components/SolicitudDetailDialog";
 import logo from "@/assets/obrared-logo.png";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -34,10 +35,12 @@ const formatCOP = (n: number) =>
 const SolicitudCard = ({
   s,
   action,
+  onVerMas,
   showCliente = false,
 }: {
   s: Solicitud;
   action?: { label: string; onClick: () => void; icon?: React.ReactNode };
+  onVerMas?: () => void;
   showCliente?: boolean;
 }) => (
   <Card className="hover:shadow-elevated transition-shadow">
@@ -69,12 +72,20 @@ const SolicitudCard = ({
           <span className="line-clamp-1">{s.ubicacion}</span>
         </span>
       </div>
-      {action && (
-        <Button onClick={action.onClick} className="w-full mt-2" size="sm">
-          {action.icon}
-          {action.label}
-        </Button>
-      )}
+      <div className="flex flex-col gap-2 mt-2">
+        {onVerMas && (
+          <Button onClick={onVerMas} variant="outline" size="sm" className="w-full">
+            <Eye size={14} />
+            Ver más información
+          </Button>
+        )}
+        {action && (
+          <Button onClick={action.onClick} className="w-full" size="sm">
+            {action.icon}
+            {action.label}
+          </Button>
+        )}
+      </div>
     </CardContent>
   </Card>
 );
@@ -87,6 +98,7 @@ const Dashboard = () => {
   const [openForm, setOpenForm] = useState(false);
   const [filter, setFilter] = useState<SolicitudEstado | "todas">("todas");
   const [search, setSearch] = useState("");
+  const [detalle, setDetalle] = useState<Solicitud | null>(null);
 
   const isCliente = user?.role === "cliente";
   const isTrabajador = user?.role === "trabajador";
@@ -287,11 +299,25 @@ const Dashboard = () => {
                   icon: <Send size={14} />,
                 };
               }
-              return <SolicitudCard key={s.id} s={s} action={action} showCliente={!isCliente} />;
+              return (
+                <SolicitudCard
+                  key={s.id}
+                  s={s}
+                  action={action}
+                  showCliente={!isCliente}
+                  onVerMas={isTrabajador ? () => setDetalle(s) : undefined}
+                />
+              );
             })}
           </div>
         )}
       </main>
+
+      <SolicitudDetailDialog
+        solicitud={detalle}
+        open={!!detalle}
+        onOpenChange={(v) => !v && setDetalle(null)}
+      />
     </div>
   );
 };
