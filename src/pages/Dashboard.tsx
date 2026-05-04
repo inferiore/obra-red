@@ -1,6 +1,9 @@
 import { useMemo, useState } from "react";
-import { LogOut, Plus, Search, MapPin, DollarSign, CheckCircle2, Send, UserCircle, Eye } from "lucide-react";
+import { LogOut, Plus, Search, MapPin, DollarSign, CheckCircle2, Send, UserCircle, Eye, Users } from "lucide-react";
 import { SolicitudDetailDialog } from "@/components/SolicitudDetailDialog";
+import { OfertasDialog } from "@/components/OfertasDialog";
+import { getOfertasMock } from "@/lib/ofertas";
+import { Badge } from "@/components/ui/badge";
 import logo from "@/assets/obrared-logo.png";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -36,11 +39,15 @@ const SolicitudCard = ({
   s,
   action,
   onVerMas,
+  onVerOfertas,
+  ofertasCount,
   showCliente = false,
 }: {
   s: Solicitud;
   action?: { label: string; onClick: () => void; icon?: React.ReactNode };
   onVerMas?: () => void;
+  onVerOfertas?: () => void;
+  ofertasCount?: number;
   showCliente?: boolean;
 }) => (
   <Card className="hover:shadow-elevated transition-shadow">
@@ -71,8 +78,20 @@ const SolicitudCard = ({
           <MapPin size={14} className="shrink-0" />
           <span className="line-clamp-1">{s.ubicacion}</span>
         </span>
+        {typeof ofertasCount === "number" && ofertasCount > 0 && (
+          <Badge variant="secondary" className="gap-1">
+            <Users size={12} />
+            {ofertasCount} {ofertasCount === 1 ? "oferta" : "ofertas"}
+          </Badge>
+        )}
       </div>
       <div className="flex flex-col gap-2 mt-2">
+        {onVerOfertas && (
+          <Button onClick={onVerOfertas} className="w-full" size="sm">
+            <Users size={14} />
+            Ver ofertas {ofertasCount ? `(${ofertasCount})` : ""}
+          </Button>
+        )}
         {onVerMas && (
           <Button onClick={onVerMas} variant="outline" size="sm" className="w-full">
             <Eye size={14} />
@@ -80,7 +99,7 @@ const SolicitudCard = ({
           </Button>
         )}
         {action && (
-          <Button onClick={action.onClick} className="w-full" size="sm">
+          <Button onClick={action.onClick} className="w-full" size="sm" variant={onVerOfertas ? "outline" : "default"}>
             {action.icon}
             {action.label}
           </Button>
@@ -99,6 +118,7 @@ const Dashboard = () => {
   const [filter, setFilter] = useState<SolicitudEstado | "todas">("todas");
   const [search, setSearch] = useState("");
   const [detalle, setDetalle] = useState<Solicitud | null>(null);
+  const [ofertasOf, setOfertasOf] = useState<Solicitud | null>(null);
 
   const isCliente = user?.role === "cliente";
   const isTrabajador = user?.role === "trabajador";
@@ -299,6 +319,10 @@ const Dashboard = () => {
                   icon: <Send size={14} />,
                 };
               }
+              const ofertasCount =
+                isCliente && (s.estado === "publicado" || s.estado === "ejecucion")
+                  ? getOfertasMock(s.id, s.presupuesto).length
+                  : undefined;
               return (
                 <SolicitudCard
                   key={s.id}
@@ -306,6 +330,10 @@ const Dashboard = () => {
                   action={action}
                   showCliente={!isCliente}
                   onVerMas={isTrabajador ? () => setDetalle(s) : undefined}
+                  onVerOfertas={
+                    isCliente && s.estado === "publicado" ? () => setOfertasOf(s) : undefined
+                  }
+                  ofertasCount={ofertasCount}
                 />
               );
             })}
@@ -317,6 +345,12 @@ const Dashboard = () => {
         solicitud={detalle}
         open={!!detalle}
         onOpenChange={(v) => !v && setDetalle(null)}
+      />
+      <OfertasDialog
+        solicitud={ofertasOf}
+        open={!!ofertasOf}
+        onOpenChange={(v) => !v && setOfertasOf(null)}
+        onAceptar={(id) => actualizarEstado(id, "ejecucion")}
       />
     </div>
   );
