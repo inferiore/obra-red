@@ -35,10 +35,12 @@ const formatCOP = (n: number) =>
 const SolicitudCard = ({
   s,
   action,
+  onVerMas,
   showCliente = false,
 }: {
   s: Solicitud;
   action?: { label: string; onClick: () => void; icon?: React.ReactNode };
+  onVerMas?: () => void;
   showCliente?: boolean;
 }) => (
   <Card className="hover:shadow-elevated transition-shadow">
@@ -70,12 +72,20 @@ const SolicitudCard = ({
           <span className="line-clamp-1">{s.ubicacion}</span>
         </span>
       </div>
-      {action && (
-        <Button onClick={action.onClick} className="w-full mt-2" size="sm">
-          {action.icon}
-          {action.label}
-        </Button>
-      )}
+      <div className="flex flex-col gap-2 mt-2">
+        {onVerMas && (
+          <Button onClick={onVerMas} variant="outline" size="sm" className="w-full">
+            <Eye size={14} />
+            Ver más información
+          </Button>
+        )}
+        {action && (
+          <Button onClick={action.onClick} className="w-full" size="sm">
+            {action.icon}
+            {action.label}
+          </Button>
+        )}
+      </div>
     </CardContent>
   </Card>
 );
