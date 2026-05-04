@@ -39,11 +39,15 @@ const SolicitudCard = ({
   s,
   action,
   onVerMas,
+  onVerOfertas,
+  ofertasCount,
   showCliente = false,
 }: {
   s: Solicitud;
   action?: { label: string; onClick: () => void; icon?: React.ReactNode };
   onVerMas?: () => void;
+  onVerOfertas?: () => void;
+  ofertasCount?: number;
   showCliente?: boolean;
 }) => (
   <Card className="hover:shadow-elevated transition-shadow">
@@ -74,8 +78,20 @@ const SolicitudCard = ({
           <MapPin size={14} className="shrink-0" />
           <span className="line-clamp-1">{s.ubicacion}</span>
         </span>
+        {typeof ofertasCount === "number" && ofertasCount > 0 && (
+          <Badge variant="secondary" className="gap-1">
+            <Users size={12} />
+            {ofertasCount} {ofertasCount === 1 ? "oferta" : "ofertas"}
+          </Badge>
+        )}
       </div>
       <div className="flex flex-col gap-2 mt-2">
+        {onVerOfertas && (
+          <Button onClick={onVerOfertas} className="w-full" size="sm">
+            <Users size={14} />
+            Ver ofertas {ofertasCount ? `(${ofertasCount})` : ""}
+          </Button>
+        )}
         {onVerMas && (
           <Button onClick={onVerMas} variant="outline" size="sm" className="w-full">
             <Eye size={14} />
@@ -83,7 +99,7 @@ const SolicitudCard = ({
           </Button>
         )}
         {action && (
-          <Button onClick={action.onClick} className="w-full" size="sm">
+          <Button onClick={action.onClick} className="w-full" size="sm" variant={onVerOfertas ? "outline" : "default"}>
             {action.icon}
             {action.label}
           </Button>
