@@ -319,6 +319,10 @@ const Dashboard = () => {
                   icon: <Send size={14} />,
                 };
               }
+              const ofertasCount =
+                isCliente && (s.estado === "publicado" || s.estado === "ejecucion")
+                  ? getOfertasMock(s.id, s.presupuesto).length
+                  : undefined;
               return (
                 <SolicitudCard
                   key={s.id}
@@ -326,6 +330,10 @@ const Dashboard = () => {
                   action={action}
                   showCliente={!isCliente}
                   onVerMas={isTrabajador ? () => setDetalle(s) : undefined}
+                  onVerOfertas={
+                    isCliente && s.estado === "publicado" ? () => setOfertasOf(s) : undefined
+                  }
+                  ofertasCount={ofertasCount}
                 />
               );
             })}
@@ -337,6 +345,12 @@ const Dashboard = () => {
         solicitud={detalle}
         open={!!detalle}
         onOpenChange={(v) => !v && setDetalle(null)}
+      />
+      <OfertasDialog
+        solicitud={ofertasOf}
+        open={!!ofertasOf}
+        onOpenChange={(v) => !v && setOfertasOf(null)}
+        onAceptar={(id) => actualizarEstado(id, "ejecucion")}
       />
     </div>
   );
