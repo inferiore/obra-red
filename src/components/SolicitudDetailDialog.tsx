@@ -204,12 +204,10 @@ export const SolicitudDetailDialog = ({ solicitud, open, onOpenChange }: Props) 
               <Button variant="outline" onClick={resetAndClose}>
                 Cerrar
               </Button>
-              {solicitud.estado === "publicado" && (
-                <Button onClick={() => setShowOferta(true)}>
-                  <DollarSign size={14} />
-                  Enviar oferta de valor
-                </Button>
-              )}
+              <Button onClick={() => setShowOferta(true)}>
+                <DollarSign size={14} />
+                Enviar oferta de valor
+              </Button>
             </>
           )}
         </div>
