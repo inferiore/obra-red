@@ -1,6 +1,9 @@
 import { useMemo, useState } from "react";
-import { LogOut, Plus, Search, MapPin, DollarSign, CheckCircle2, Send, UserCircle, Eye } from "lucide-react";
+import { LogOut, Plus, Search, MapPin, DollarSign, CheckCircle2, Send, UserCircle, Eye, Users } from "lucide-react";
 import { SolicitudDetailDialog } from "@/components/SolicitudDetailDialog";
+import { OfertasDialog } from "@/components/OfertasDialog";
+import { getOfertasMock } from "@/lib/ofertas";
+import { Badge } from "@/components/ui/badge";
 import logo from "@/assets/obrared-logo.png";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
