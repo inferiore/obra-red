@@ -1,4 +1,5 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { ConfirmacionAcuerdoDialog } from "@/components/ConfirmacionAcuerdoDialog";
 import { Star, Clock, CheckCircle2, Sparkles, ShieldCheck, Briefcase, User } from "lucide-react";
 import {
   Dialog,
@@ -131,6 +132,7 @@ const OfertaCard = ({
 
 export const OfertasDialog = ({ solicitud, open, onOpenChange, onAceptar }: Props) => {
   const { toast } = useToast();
+  const [ofertaPendiente, setOfertaPendiente] = useState<Oferta | null>(null);
 
   const ofertasOrdenadas = useMemo(() => {
     if (!solicitud) return [];
@@ -140,12 +142,17 @@ export const OfertasDialog = ({ solicitud, open, onOpenChange, onAceptar }: Prop
 
   if (!solicitud) return null;
 
-  const handleAceptar = (oferta: Oferta) => {
+  const handleSeleccionar = (oferta: Oferta) => {
+    setOfertaPendiente(oferta);
+  };
+
+  const handleConfirmar = (solicitudId: string, oferta: Oferta) => {
     toast({
-      title: "Oferta aceptada",
+      title: "Acuerdo confirmado",
       description: `Aceptaste la oferta de ${oferta.nombre} por ${formatCOP(oferta.precio)}. El pago quedará en escrow.`,
     });
-    onAceptar?.(solicitud.id, oferta);
+    onAceptar?.(solicitudId, oferta);
+    setOfertaPendiente(null);
     onOpenChange(false);
   };
 
@@ -187,7 +194,7 @@ export const OfertasDialog = ({ solicitud, open, onOpenChange, onAceptar }: Prop
                     oferta={o}
                     destacada={i === 0}
                     razon={i === 0 ? razon : undefined}
-                    onAceptar={() => handleAceptar(o)}
+                    onAceptar={() => handleSeleccionar(o)}
                   />
                 </div>
               ))
@@ -195,6 +202,13 @@ export const OfertasDialog = ({ solicitud, open, onOpenChange, onAceptar }: Prop
           </div>
         </ScrollArea>
       </DialogContent>
+      <ConfirmacionAcuerdoDialog
+        solicitud={solicitud}
+        oferta={ofertaPendiente}
+        open={!!ofertaPendiente}
+        onOpenChange={(v) => !v && setOfertaPendiente(null)}
+        onConfirmar={handleConfirmar}
+      />
     </Dialog>
   );
 };
