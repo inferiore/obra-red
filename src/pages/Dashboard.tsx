@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { LogOut, Plus, Search, MapPin, DollarSign, CheckCircle2, Send, UserCircle, Eye, Users } from "lucide-react";
 import { SolicitudDetailDialog } from "@/components/SolicitudDetailDialog";
 import { OfertasDialog } from "@/components/OfertasDialog";
+import { RevisionTrabajoDialog } from "@/components/RevisionTrabajoDialog";
 import { getOfertasMock } from "@/lib/ofertas";
 import { Badge } from "@/components/ui/badge";
 import logo from "@/assets/obrared-logo.png";
@@ -119,6 +120,7 @@ const Dashboard = () => {
   const [search, setSearch] = useState("");
   const [detalle, setDetalle] = useState<Solicitud | null>(null);
   const [ofertasOf, setOfertasOf] = useState<Solicitud | null>(null);
+  const [revisionOf, setRevisionOf] = useState<Solicitud | null>(null);
 
   const isCliente = user?.role === "cliente";
   const isTrabajador = user?.role === "trabajador";
@@ -305,8 +307,8 @@ const Dashboard = () => {
                 };
               } else if (isCliente && s.estado === "ejecucion") {
                 action = {
-                  label: "Marcar como finalizado",
-                  onClick: () => finalizar(s.id),
+                  label: "Revisar y aprobar trabajo",
+                  onClick: () => setRevisionOf(s),
                   icon: <CheckCircle2 size={14} />,
                 };
               } else if (isCliente && s.estado === "borrador") {
@@ -351,6 +353,12 @@ const Dashboard = () => {
         open={!!ofertasOf}
         onOpenChange={(v) => !v && setOfertasOf(null)}
         onAceptar={(id) => actualizarEstado(id, "ejecucion")}
+      />
+      <RevisionTrabajoDialog
+        solicitud={revisionOf}
+        open={!!revisionOf}
+        onOpenChange={(v) => !v && setRevisionOf(null)}
+        onAprobar={(id) => finalizar(id)}
       />
     </div>
   );
