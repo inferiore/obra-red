@@ -307,8 +307,8 @@ const Dashboard = () => {
                 };
               } else if (isCliente && s.estado === "ejecucion") {
                 action = {
-                  label: "Marcar como finalizado",
-                  onClick: () => finalizar(s.id),
+                  label: "Revisar y aprobar trabajo",
+                  onClick: () => setRevisionOf(s),
                   icon: <CheckCircle2 size={14} />,
                 };
               } else if (isCliente && s.estado === "borrador") {
