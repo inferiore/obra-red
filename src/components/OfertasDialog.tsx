@@ -132,6 +132,7 @@ const OfertaCard = ({
 
 export const OfertasDialog = ({ solicitud, open, onOpenChange, onAceptar }: Props) => {
   const { toast } = useToast();
+  const [ofertaPendiente, setOfertaPendiente] = useState<Oferta | null>(null);
 
   const ofertasOrdenadas = useMemo(() => {
     if (!solicitud) return [];
@@ -141,12 +142,17 @@ export const OfertasDialog = ({ solicitud, open, onOpenChange, onAceptar }: Prop
 
   if (!solicitud) return null;
 
-  const handleAceptar = (oferta: Oferta) => {
+  const handleSeleccionar = (oferta: Oferta) => {
+    setOfertaPendiente(oferta);
+  };
+
+  const handleConfirmar = (solicitudId: string, oferta: Oferta) => {
     toast({
-      title: "Oferta aceptada",
+      title: "Acuerdo confirmado",
       description: `Aceptaste la oferta de ${oferta.nombre} por ${formatCOP(oferta.precio)}. El pago quedará en escrow.`,
     });
-    onAceptar?.(solicitud.id, oferta);
+    onAceptar?.(solicitudId, oferta);
+    setOfertaPendiente(null);
     onOpenChange(false);
   };
 
