@@ -120,6 +120,7 @@ const Dashboard = () => {
   const [search, setSearch] = useState("");
   const [detalle, setDetalle] = useState<Solicitud | null>(null);
   const [ofertasOf, setOfertasOf] = useState<Solicitud | null>(null);
+  const [revisionOf, setRevisionOf] = useState<Solicitud | null>(null);
 
   const isCliente = user?.role === "cliente";
   const isTrabajador = user?.role === "trabajador";
