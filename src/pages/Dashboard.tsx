@@ -354,6 +354,12 @@ const Dashboard = () => {
         onOpenChange={(v) => !v && setOfertasOf(null)}
         onAceptar={(id) => actualizarEstado(id, "ejecucion")}
       />
+      <RevisionTrabajoDialog
+        solicitud={revisionOf}
+        open={!!revisionOf}
+        onOpenChange={(v) => !v && setRevisionOf(null)}
+        onAprobar={(id) => finalizar(id)}
+      />
     </div>
   );
 };
