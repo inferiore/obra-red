@@ -194,7 +194,7 @@ export const OfertasDialog = ({ solicitud, open, onOpenChange, onAceptar }: Prop
                     oferta={o}
                     destacada={i === 0}
                     razon={i === 0 ? razon : undefined}
-                    onAceptar={() => handleAceptar(o)}
+                    onAceptar={() => handleSeleccionar(o)}
                   />
                 </div>
               ))
@@ -202,6 +202,13 @@ export const OfertasDialog = ({ solicitud, open, onOpenChange, onAceptar }: Prop
           </div>
         </ScrollArea>
       </DialogContent>
+      <ConfirmacionAcuerdoDialog
+        solicitud={solicitud}
+        oferta={ofertaPendiente}
+        open={!!ofertaPendiente}
+        onOpenChange={(v) => !v && setOfertaPendiente(null)}
+        onConfirmar={handleConfirmar}
+      />
     </Dialog>
   );
 };
