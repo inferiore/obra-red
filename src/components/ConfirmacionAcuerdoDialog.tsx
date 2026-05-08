@@ -48,6 +48,9 @@ interface Props {
 }
 
 const TERMINOS = [
+  "ObraRed es una plataforma digital que conecta clientes con trabajadores.",
+  "Los trabajadores son profesionales independientes y no son empleados de ObraRed.",
+  "El precio mostrado corresponde a la oferta aceptada del trabajador.",
   "El pago será retenido por la plataforma (escrow) hasta que apruebes el trabajo.",
   "El trabajador se compromete a cumplir el alcance, calidad y plazo acordados.",
   "Puedes solicitar correcciones antes de aprobar y liberar el pago.",
