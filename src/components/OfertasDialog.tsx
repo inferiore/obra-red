@@ -220,6 +220,14 @@ export const OfertasDialog = ({ solicitud, open, onOpenChange, onAceptar }: Prop
         onOpenChange={(v) => !v && setOfertaPendiente(null)}
         onConfirmar={handleConfirmar}
       />
+      <PagoFlowDialog
+        solicitud={solicitud}
+        oferta={ofertaPago}
+        open={!!ofertaPago}
+        onOpenChange={(v) => !v && setOfertaPago(null)}
+        onPagoCompletado={handlePagoCompletado}
+        onIrAlSeguimiento={handleCerrarPago}
+      />
     </Dialog>
   );
 };
