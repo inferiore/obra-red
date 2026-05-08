@@ -49,15 +49,10 @@ interface Props {
 
 type Metodo = "tarjeta" | "pse" | "nequi";
 
-const METODOS: {
-  id: Metodo;
-  label: string;
-  desc: string;
-  icon: React.ComponentType<{ size?: number; className?: string }>;
-}[] = [
-  { id: "tarjeta", label: "Tarjeta de crédito/débito", desc: "Visa, Mastercard, Amex", icon: CreditCard },
-  { id: "pse", label: "PSE", desc: "Débito desde tu banco", icon: Building2 },
-  { id: "nequi", label: "Nequi / Daviplata", desc: "Pago desde billetera", icon: Smartphone },
+const METODOS = [
+  { id: "tarjeta" as const, label: "Tarjeta de crédito/débito", desc: "Visa, Mastercard, Amex", icon: CreditCard },
+  { id: "pse" as const, label: "PSE", desc: "Débito desde tu banco", icon: Building2 },
+  { id: "nequi" as const, label: "Nequi / Daviplata", desc: "Pago desde billetera", icon: Smartphone },
 ];
 
 export const PagoFlowDialog = ({
