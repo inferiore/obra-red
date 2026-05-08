@@ -322,6 +322,14 @@ export const ConfirmacionAcuerdoDialog = ({
           </Button>
         </div>
       </DialogContent>
+
+      <LegalDialog
+        type={legalOpen ?? "terminos"}
+        open={legalOpen !== null}
+        onOpenChange={(open) => {
+          if (!open) setLegalOpen(null);
+        }}
+      />
     </Dialog>
   );
 };
