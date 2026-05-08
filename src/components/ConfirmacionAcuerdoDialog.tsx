@@ -1,4 +1,5 @@
 import { useState } from "react";
+import LegalDialog from "@/components/LegalDialog";
 import {
   ShieldCheck,
   CheckCircle2,
@@ -11,6 +12,7 @@ import {
   ChevronDown,
   ChevronUp,
   X,
+  FileText,
 } from "lucide-react";
 import {
   Dialog,
@@ -48,6 +50,9 @@ interface Props {
 }
 
 const TERMINOS = [
+  "ObraRed es una plataforma digital que conecta clientes con trabajadores.",
+  "Los trabajadores son profesionales independientes y no son empleados de ObraRed.",
+  "El precio mostrado corresponde a la oferta aceptada del trabajador.",
   "El pago será retenido por la plataforma (escrow) hasta que apruebes el trabajo.",
   "El trabajador se compromete a cumplir el alcance, calidad y plazo acordados.",
   "Puedes solicitar correcciones antes de aprobar y liberar el pago.",
@@ -64,6 +69,7 @@ export const ConfirmacionAcuerdoDialog = ({
 }: Props) => {
   const [aceptado, setAceptado] = useState(false);
   const [verCompleto, setVerCompleto] = useState(false);
+  const [legalOpen, setLegalOpen] = useState<null | "terminos" | "privacidad">(null);
 
   if (!solicitud || !oferta) return null;
 
@@ -246,6 +252,34 @@ export const ConfirmacionAcuerdoDialog = ({
             </div>
 
             {/* Aceptación */}
+            <div className="px-4 py-3 rounded-xl border bg-muted/30 space-y-2">
+              <p className="text-xs text-muted-foreground">
+                Antes de confirmar, puedes revisar:
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="text-xs h-8"
+                  onClick={() => setLegalOpen("terminos")}
+                >
+                  <FileText size={13} className="mr-1" />
+                  Términos y condiciones
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="text-xs h-8"
+                  onClick={() => setLegalOpen("privacidad")}
+                >
+                  <ShieldCheck size={13} className="mr-1" />
+                  Política de privacidad
+                </Button>
+              </div>
+            </div>
+
             <label
               htmlFor="acepto-terminos"
               className="flex items-start gap-3 p-4 rounded-xl border-2 border-dashed cursor-pointer hover:bg-muted/40 transition-colors data-[checked=true]:border-primary data-[checked=true]:bg-primary/5"
@@ -288,6 +322,14 @@ export const ConfirmacionAcuerdoDialog = ({
           </Button>
         </div>
       </DialogContent>
+
+      <LegalDialog
+        type={legalOpen ?? "terminos"}
+        open={legalOpen !== null}
+        onOpenChange={(open) => {
+          if (!open) setLegalOpen(null);
+        }}
+      />
     </Dialog>
   );
 };
