@@ -251,6 +251,34 @@ export const ConfirmacionAcuerdoDialog = ({
             </div>
 
             {/* Aceptación */}
+            <div className="px-4 py-3 rounded-xl border bg-muted/30 space-y-2">
+              <p className="text-xs text-muted-foreground">
+                Antes de confirmar, puedes revisar:
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="text-xs h-8"
+                  onClick={() => setLegalOpen("terminos")}
+                >
+                  <FileText size={13} className="mr-1" />
+                  Términos y condiciones
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="text-xs h-8"
+                  onClick={() => setLegalOpen("privacidad")}
+                >
+                  <ShieldCheck size={13} className="mr-1" />
+                  Política de privacidad
+                </Button>
+              </div>
+            </div>
+
             <label
               htmlFor="acepto-terminos"
               className="flex items-start gap-3 p-4 rounded-xl border-2 border-dashed cursor-pointer hover:bg-muted/40 transition-colors data-[checked=true]:border-primary data-[checked=true]:bg-primary/5"
