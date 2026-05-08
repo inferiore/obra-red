@@ -150,9 +150,14 @@ const Dashboard = () => {
     toast({ title: "Trabajo aceptado", description: "La solicitud está en ejecución." });
   };
 
-  const finalizar = (id: string) => {
-    actualizarEstado(id, "finalizado");
-    toast({ title: "Trabajo finalizado", description: "El pago en escrow será liberado." });
+  const finalizar = (s: Solicitud) => {
+    actualizarEstado(s.id, "finalizado");
+    toast({
+      title: "Pago liberado al trabajador",
+      description: "El trabajo se marcó como completado. Califica el servicio.",
+    });
+    setRevisionOf(null);
+    setCalificarOf({ ...s, estado: "finalizado" });
   };
 
   const baseList = useMemo(() => {
