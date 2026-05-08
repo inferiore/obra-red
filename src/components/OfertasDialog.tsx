@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { ConfirmacionAcuerdoDialog } from "@/components/ConfirmacionAcuerdoDialog";
+import { PagoFlowDialog } from "@/components/PagoFlowDialog";
 import { Star, Clock, CheckCircle2, Sparkles, ShieldCheck, Briefcase, User } from "lucide-react";
 import {
   Dialog,
