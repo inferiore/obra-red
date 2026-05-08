@@ -42,6 +42,7 @@ const formatCOP = (n: number) =>
 const SolicitudCard = ({
   s,
   action,
+  secondaryAction,
   onVerMas,
   onVerOfertas,
   ofertasCount,
@@ -49,6 +50,7 @@ const SolicitudCard = ({
 }: {
   s: Solicitud;
   action?: { label: string; onClick: () => void; icon?: React.ReactNode };
+  secondaryAction?: { label: string; onClick: () => void; icon?: React.ReactNode };
   onVerMas?: () => void;
   onVerOfertas?: () => void;
   ofertasCount?: number;
@@ -106,6 +108,12 @@ const SolicitudCard = ({
           <Button onClick={action.onClick} className="w-full" size="sm" variant={onVerOfertas ? "outline" : "default"}>
             {action.icon}
             {action.label}
+          </Button>
+        )}
+        {secondaryAction && (
+          <Button onClick={secondaryAction.onClick} variant="outline" size="sm" className="w-full">
+            {secondaryAction.icon}
+            {secondaryAction.label}
           </Button>
         )}
       </div>
