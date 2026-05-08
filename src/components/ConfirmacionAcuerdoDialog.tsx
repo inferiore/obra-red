@@ -12,6 +12,7 @@ import {
   ChevronDown,
   ChevronUp,
   X,
+  FileText,
 } from "lucide-react";
 import {
   Dialog,
