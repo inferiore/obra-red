@@ -68,6 +68,7 @@ export const ConfirmacionAcuerdoDialog = ({
 }: Props) => {
   const [aceptado, setAceptado] = useState(false);
   const [verCompleto, setVerCompleto] = useState(false);
+  const [legalOpen, setLegalOpen] = useState<null | "terminos" | "privacidad">(null);
 
   if (!solicitud || !oferta) return null;
 
