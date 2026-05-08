@@ -1,4 +1,5 @@
 import { useState } from "react";
+import LegalDialog from "@/components/LegalDialog";
 import {
   ShieldCheck,
   CheckCircle2,
