@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { ConfirmacionAcuerdoDialog } from "@/components/ConfirmacionAcuerdoDialog";
+import { PagoFlowDialog } from "@/components/PagoFlowDialog";
 import { Star, Clock, CheckCircle2, Sparkles, ShieldCheck, Briefcase, User } from "lucide-react";
 import {
   Dialog,
@@ -133,6 +134,7 @@ const OfertaCard = ({
 export const OfertasDialog = ({ solicitud, open, onOpenChange, onAceptar }: Props) => {
   const { toast } = useToast();
   const [ofertaPendiente, setOfertaPendiente] = useState<Oferta | null>(null);
+  const [ofertaPago, setOfertaPago] = useState<Oferta | null>(null);
 
   const ofertasOrdenadas = useMemo(() => {
     if (!solicitud) return [];
@@ -146,13 +148,22 @@ export const OfertasDialog = ({ solicitud, open, onOpenChange, onAceptar }: Prop
     setOfertaPendiente(oferta);
   };
 
-  const handleConfirmar = (solicitudId: string, oferta: Oferta) => {
+  const handleConfirmar = (_solicitudId: string, oferta: Oferta) => {
+    // Tras aceptar el acuerdo, abrimos la pantalla de pago (escrow)
+    setOfertaPendiente(null);
+    setOfertaPago(oferta);
+  };
+
+  const handlePagoCompletado = (solicitudId: string, oferta: Oferta) => {
     toast({
-      title: "Acuerdo confirmado",
-      description: `Aceptaste la oferta de ${oferta.nombre} por ${formatCOP(oferta.precio)}. El pago quedará en escrow.`,
+      title: "Pago asegurado en escrow",
+      description: `Aceptaste a ${oferta.nombre} por ${formatCOP(oferta.precio)}. El trabajo está en ejecución.`,
     });
     onAceptar?.(solicitudId, oferta);
-    setOfertaPendiente(null);
+  };
+
+  const handleCerrarPago = () => {
+    setOfertaPago(null);
     onOpenChange(false);
   };
 
@@ -208,6 +219,14 @@ export const OfertasDialog = ({ solicitud, open, onOpenChange, onAceptar }: Prop
         open={!!ofertaPendiente}
         onOpenChange={(v) => !v && setOfertaPendiente(null)}
         onConfirmar={handleConfirmar}
+      />
+      <PagoFlowDialog
+        solicitud={solicitud}
+        oferta={ofertaPago}
+        open={!!ofertaPago}
+        onOpenChange={(v) => !v && setOfertaPago(null)}
+        onPagoCompletado={handlePagoCompletado}
+        onIrAlSeguimiento={handleCerrarPago}
       />
     </Dialog>
   );

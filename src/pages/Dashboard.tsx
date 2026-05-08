@@ -1,8 +1,11 @@
 import { useMemo, useState } from "react";
-import { LogOut, Plus, Search, MapPin, DollarSign, CheckCircle2, Send, UserCircle, Eye, Users } from "lucide-react";
+import { LogOut, Plus, Search, MapPin, DollarSign, CheckCircle2, Send, UserCircle, Eye, Users, Clock, Camera } from "lucide-react";
 import { SolicitudDetailDialog } from "@/components/SolicitudDetailDialog";
 import { OfertasDialog } from "@/components/OfertasDialog";
 import { RevisionTrabajoDialog } from "@/components/RevisionTrabajoDialog";
+import { ProgresoTrabajoDialog } from "@/components/ProgresoTrabajoDialog";
+import { EvidenciasUploadDialog } from "@/components/EvidenciasUploadDialog";
+import { CalificacionDialog } from "@/components/CalificacionDialog";
 import { getOfertasMock } from "@/lib/ofertas";
 import { Badge } from "@/components/ui/badge";
 import logo from "@/assets/obrared-logo.png";
@@ -39,6 +42,7 @@ const formatCOP = (n: number) =>
 const SolicitudCard = ({
   s,
   action,
+  secondaryAction,
   onVerMas,
   onVerOfertas,
   ofertasCount,
@@ -46,6 +50,7 @@ const SolicitudCard = ({
 }: {
   s: Solicitud;
   action?: { label: string; onClick: () => void; icon?: React.ReactNode };
+  secondaryAction?: { label: string; onClick: () => void; icon?: React.ReactNode };
   onVerMas?: () => void;
   onVerOfertas?: () => void;
   ofertasCount?: number;
@@ -105,6 +110,12 @@ const SolicitudCard = ({
             {action.label}
           </Button>
         )}
+        {secondaryAction && (
+          <Button onClick={secondaryAction.onClick} variant="outline" size="sm" className="w-full">
+            {secondaryAction.icon}
+            {secondaryAction.label}
+          </Button>
+        )}
       </div>
     </CardContent>
   </Card>
@@ -121,6 +132,9 @@ const Dashboard = () => {
   const [detalle, setDetalle] = useState<Solicitud | null>(null);
   const [ofertasOf, setOfertasOf] = useState<Solicitud | null>(null);
   const [revisionOf, setRevisionOf] = useState<Solicitud | null>(null);
+  const [progresoOf, setProgresoOf] = useState<Solicitud | null>(null);
+  const [evidenciasOf, setEvidenciasOf] = useState<Solicitud | null>(null);
+  const [calificarOf, setCalificarOf] = useState<Solicitud | null>(null);
 
   const isCliente = user?.role === "cliente";
   const isTrabajador = user?.role === "trabajador";
@@ -136,9 +150,14 @@ const Dashboard = () => {
     toast({ title: "Trabajo aceptado", description: "La solicitud está en ejecución." });
   };
 
-  const finalizar = (id: string) => {
-    actualizarEstado(id, "finalizado");
-    toast({ title: "Trabajo finalizado", description: "El pago en escrow será liberado." });
+  const finalizar = (s: Solicitud) => {
+    actualizarEstado(s.id, "finalizado");
+    toast({
+      title: "Pago liberado al trabajador",
+      description: "El trabajo se marcó como completado. Califica el servicio.",
+    });
+    setRevisionOf(null);
+    setCalificarOf({ ...s, estado: "finalizado" });
   };
 
   const baseList = useMemo(() => {
@@ -299,17 +318,30 @@ const Dashboard = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map((s) => {
               let action: Parameters<typeof SolicitudCard>[0]["action"];
+              let secondaryAction: Parameters<typeof SolicitudCard>[0]["secondaryAction"];
+
               if (isTrabajador && s.estado === "publicado") {
                 action = {
                   label: "Tomar trabajo",
                   onClick: () => tomar(s.id),
                   icon: <Send size={14} />,
                 };
+              } else if (isTrabajador && s.estado === "ejecucion") {
+                action = {
+                  label: "Subir evidencias",
+                  onClick: () => setEvidenciasOf(s),
+                  icon: <Camera size={14} />,
+                };
               } else if (isCliente && s.estado === "ejecucion") {
                 action = {
                   label: "Revisar y aprobar trabajo",
                   onClick: () => setRevisionOf(s),
                   icon: <CheckCircle2 size={14} />,
+                };
+                secondaryAction = {
+                  label: "Ver progreso",
+                  onClick: () => setProgresoOf(s),
+                  icon: <Clock size={14} />,
                 };
               } else if (isCliente && s.estado === "borrador") {
                 action = {
@@ -320,7 +352,14 @@ const Dashboard = () => {
                   },
                   icon: <Send size={14} />,
                 };
+              } else if (isCliente && s.estado === "finalizado") {
+                action = {
+                  label: "Calificar servicio",
+                  onClick: () => setCalificarOf(s),
+                  icon: <CheckCircle2 size={14} />,
+                };
               }
+
               const ofertasCount =
                 isCliente && (s.estado === "publicado" || s.estado === "ejecucion")
                   ? getOfertasMock(s.id, s.presupuesto).length
@@ -330,6 +369,7 @@ const Dashboard = () => {
                   key={s.id}
                   s={s}
                   action={action}
+                  secondaryAction={secondaryAction}
                   showCliente={!isCliente}
                   onVerMas={isTrabajador ? () => setDetalle(s) : undefined}
                   onVerOfertas={
@@ -358,7 +398,22 @@ const Dashboard = () => {
         solicitud={revisionOf}
         open={!!revisionOf}
         onOpenChange={(v) => !v && setRevisionOf(null)}
-        onAprobar={(id) => finalizar(id)}
+        onAprobar={() => revisionOf && finalizar(revisionOf)}
+      />
+      <ProgresoTrabajoDialog
+        solicitud={progresoOf}
+        open={!!progresoOf}
+        onOpenChange={(v) => !v && setProgresoOf(null)}
+      />
+      <EvidenciasUploadDialog
+        solicitud={evidenciasOf}
+        open={!!evidenciasOf}
+        onOpenChange={(v) => !v && setEvidenciasOf(null)}
+      />
+      <CalificacionDialog
+        solicitud={calificarOf}
+        open={!!calificarOf}
+        onOpenChange={(v) => !v && setCalificarOf(null)}
       />
     </div>
   );
