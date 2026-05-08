@@ -132,6 +132,9 @@ const Dashboard = () => {
   const [detalle, setDetalle] = useState<Solicitud | null>(null);
   const [ofertasOf, setOfertasOf] = useState<Solicitud | null>(null);
   const [revisionOf, setRevisionOf] = useState<Solicitud | null>(null);
+  const [progresoOf, setProgresoOf] = useState<Solicitud | null>(null);
+  const [evidenciasOf, setEvidenciasOf] = useState<Solicitud | null>(null);
+  const [calificarOf, setCalificarOf] = useState<Solicitud | null>(null);
 
   const isCliente = user?.role === "cliente";
   const isTrabajador = user?.role === "trabajador";
