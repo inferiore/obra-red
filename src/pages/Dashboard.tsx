@@ -138,6 +138,15 @@ const Dashboard = () => {
   const [progresoOf, setProgresoOf] = useState<Solicitud | null>(null);
   const [evidenciasOf, setEvidenciasOf] = useState<Solicitud | null>(null);
   const [calificarOf, setCalificarOf] = useState<Solicitud | null>(null);
+  const [ofertasEnviadas, setOfertasEnviadas] = useState<string[]>(() =>
+    getOfertasEnviadas(user?.username ?? ""),
+  );
+
+  const handleOfertaEnviada = (solicitudId: string) => {
+    marcarOfertaEnviada(user?.username ?? "", solicitudId);
+    setOfertasEnviadas((prev) => (prev.includes(solicitudId) ? prev : [...prev, solicitudId]));
+    setDetalle(null);
+  };
 
   const isCliente = user?.role === "cliente";
   const isTrabajador = user?.role === "trabajador";
