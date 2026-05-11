@@ -70,6 +70,7 @@ export const SolicitudDetailDialog = ({ solicitud, open, onOpenChange, onOfertaE
       title: "Oferta enviada",
       description: `Tu propuesta de ${formatCOP(valor)} fue enviada al cliente.`,
     });
+    onOfertaEnviada?.(solicitud.id, valor, mensaje.trim());
     resetAndClose();
   };
 
