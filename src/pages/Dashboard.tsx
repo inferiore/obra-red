@@ -178,12 +178,12 @@ const Dashboard = () => {
     if (isTrabajador) {
       return solicitudes.filter(
         (s) =>
-          s.estado === "publicado" ||
+          (s.estado === "publicado" && !ofertasEnviadas.includes(s.id)) ||
           (s.trabajadorAsignado === username && s.estado !== "borrador"),
       );
     }
     return solicitudes;
-  }, [user, isCliente, isTrabajador, porUsuario, solicitudes, username]);
+  }, [user, isCliente, isTrabajador, porUsuario, solicitudes, username, ofertasEnviadas]);
 
   const filtered = useMemo(() => {
     return baseList.filter((s) => {
