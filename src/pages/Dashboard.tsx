@@ -177,14 +177,15 @@ const Dashboard = () => {
   const filtered = useMemo(() => {
     return baseList.filter((s) => {
       const matchEstado = filter === "todas" || s.estado === filter;
+      const matchTipo = tipoFilter === "todas" || s.tipo === tipoFilter;
       const q = search.trim().toLowerCase();
       const matchSearch =
         !q ||
         s.descripcion.toLowerCase().includes(q) ||
         tipoLabel(s.tipo).toLowerCase().includes(q);
-      return matchEstado && matchSearch;
+      return matchEstado && matchTipo && matchSearch;
     });
-  }, [baseList, filter, search]);
+  }, [baseList, filter, tipoFilter, search]);
 
   const stats: Record<SolicitudEstado, number> = {
     borrador: baseList.filter((s) => s.estado === "borrador").length,
