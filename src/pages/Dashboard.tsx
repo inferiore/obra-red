@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { LogOut, Plus, Search, MapPin, DollarSign, CheckCircle2, Send, UserCircle, Eye, Users, Clock, Camera } from "lucide-react";
+import { LogOut, Plus, Search, MapPin, DollarSign, CheckCircle2, Send, UserCircle, Eye, Users, Clock, Camera, Briefcase } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SolicitudDetailDialog } from "@/components/SolicitudDetailDialog";
 import { OfertasDialog } from "@/components/OfertasDialog";
 import { RevisionTrabajoDialog } from "@/components/RevisionTrabajoDialog";
