@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { LogOut, Plus, Search, MapPin, DollarSign, CheckCircle2, Send, UserCircle, Eye, Users, Clock, Camera } from "lucide-react";
+import { LogOut, Plus, Search, MapPin, DollarSign, CheckCircle2, Send, UserCircle, Eye, Users, Clock, Camera, Briefcase } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SolicitudDetailDialog } from "@/components/SolicitudDetailDialog";
 import { OfertasDialog } from "@/components/OfertasDialog";
 import { RevisionTrabajoDialog } from "@/components/RevisionTrabajoDialog";
@@ -128,6 +129,7 @@ const Dashboard = () => {
   const { toast } = useToast();
   const [openForm, setOpenForm] = useState(false);
   const [filter, setFilter] = useState<SolicitudEstado | "todas">("todas");
+  const [tipoFilter, setTipoFilter] = useState<string>("todas");
   const [search, setSearch] = useState("");
   const [detalle, setDetalle] = useState<Solicitud | null>(null);
   const [ofertasOf, setOfertasOf] = useState<Solicitud | null>(null);
@@ -176,14 +178,15 @@ const Dashboard = () => {
   const filtered = useMemo(() => {
     return baseList.filter((s) => {
       const matchEstado = filter === "todas" || s.estado === filter;
+      const matchTipo = tipoFilter === "todas" || s.tipo === tipoFilter;
       const q = search.trim().toLowerCase();
       const matchSearch =
         !q ||
         s.descripcion.toLowerCase().includes(q) ||
         tipoLabel(s.tipo).toLowerCase().includes(q);
-      return matchEstado && matchSearch;
+      return matchEstado && matchTipo && matchSearch;
     });
-  }, [baseList, filter, search]);
+  }, [baseList, filter, tipoFilter, search]);
 
   const stats: Record<SolicitudEstado, number> = {
     borrador: baseList.filter((s) => s.estado === "borrador").length,
@@ -299,6 +302,22 @@ const Dashboard = () => {
             </TabsList>
             <TabsContent value={filter} />
           </Tabs>
+          {isTrabajador && (
+            <Select value={tipoFilter} onValueChange={setTipoFilter}>
+              <SelectTrigger className="h-11 w-full md:w-56">
+                <Briefcase size={16} className="text-muted-foreground" />
+                <SelectValue placeholder="Especialidad" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">Todas las especialidades</SelectItem>
+                {TIPOS_TRABAJO.map((t) => (
+                  <SelectItem key={t.value} value={t.value}>
+                    {t.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
 
         {/* List */}
