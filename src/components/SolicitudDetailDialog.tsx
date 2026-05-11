@@ -30,9 +30,10 @@ interface Props {
   solicitud: Solicitud | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onOfertaEnviada?: (solicitudId: string, monto: number, mensaje: string) => void;
 }
 
-export const SolicitudDetailDialog = ({ solicitud, open, onOpenChange }: Props) => {
+export const SolicitudDetailDialog = ({ solicitud, open, onOpenChange, onOfertaEnviada }: Props) => {
   const { toast } = useToast();
   const [showOferta, setShowOferta] = useState(false);
   const [monto, setMonto] = useState("");
@@ -69,6 +70,7 @@ export const SolicitudDetailDialog = ({ solicitud, open, onOpenChange }: Props) 
       title: "Oferta enviada",
       description: `Tu propuesta de ${formatCOP(valor)} fue enviada al cliente.`,
     });
+    onOfertaEnviada?.(solicitud.id, valor, mensaje.trim());
     resetAndClose();
   };
 

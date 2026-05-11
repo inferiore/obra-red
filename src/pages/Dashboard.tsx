@@ -8,6 +8,7 @@ import { ProgresoTrabajoDialog } from "@/components/ProgresoTrabajoDialog";
 import { EvidenciasUploadDialog } from "@/components/EvidenciasUploadDialog";
 import { CalificacionDialog } from "@/components/CalificacionDialog";
 import { getOfertasMock } from "@/lib/ofertas";
+import { getOfertasEnviadas, marcarOfertaEnviada } from "@/lib/ofertasEnviadas";
 import { Badge } from "@/components/ui/badge";
 import logo from "@/assets/obrared-logo.png";
 import { useNavigate } from "react-router-dom";
@@ -137,6 +138,15 @@ const Dashboard = () => {
   const [progresoOf, setProgresoOf] = useState<Solicitud | null>(null);
   const [evidenciasOf, setEvidenciasOf] = useState<Solicitud | null>(null);
   const [calificarOf, setCalificarOf] = useState<Solicitud | null>(null);
+  const [ofertasEnviadas, setOfertasEnviadas] = useState<string[]>(() =>
+    getOfertasEnviadas(user?.username ?? ""),
+  );
+
+  const handleOfertaEnviada = (solicitudId: string) => {
+    marcarOfertaEnviada(user?.username ?? "", solicitudId);
+    setOfertasEnviadas((prev) => (prev.includes(solicitudId) ? prev : [...prev, solicitudId]));
+    setDetalle(null);
+  };
 
   const isCliente = user?.role === "cliente";
   const isTrabajador = user?.role === "trabajador";
@@ -168,12 +178,12 @@ const Dashboard = () => {
     if (isTrabajador) {
       return solicitudes.filter(
         (s) =>
-          s.estado === "publicado" ||
+          (s.estado === "publicado" && !ofertasEnviadas.includes(s.id)) ||
           (s.trabajadorAsignado === username && s.estado !== "borrador"),
       );
     }
     return solicitudes;
-  }, [user, isCliente, isTrabajador, porUsuario, solicitudes, username]);
+  }, [user, isCliente, isTrabajador, porUsuario, solicitudes, username, ofertasEnviadas]);
 
   const filtered = useMemo(() => {
     return baseList.filter((s) => {
@@ -406,6 +416,7 @@ const Dashboard = () => {
         solicitud={detalle}
         open={!!detalle}
         onOpenChange={(v) => !v && setDetalle(null)}
+        onOfertaEnviada={handleOfertaEnviada}
       />
       <OfertasDialog
         solicitud={ofertasOf}
