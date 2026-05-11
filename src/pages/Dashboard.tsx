@@ -128,6 +128,7 @@ const Dashboard = () => {
   const { toast } = useToast();
   const [openForm, setOpenForm] = useState(false);
   const [filter, setFilter] = useState<SolicitudEstado | "todas">("todas");
+  const [tipoFilter, setTipoFilter] = useState<string>("todas");
   const [search, setSearch] = useState("");
   const [detalle, setDetalle] = useState<Solicitud | null>(null);
   const [ofertasOf, setOfertasOf] = useState<Solicitud | null>(null);
