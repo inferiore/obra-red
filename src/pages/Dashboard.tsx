@@ -416,6 +416,7 @@ const Dashboard = () => {
         solicitud={detalle}
         open={!!detalle}
         onOpenChange={(v) => !v && setDetalle(null)}
+        onOfertaEnviada={handleOfertaEnviada}
       />
       <OfertasDialog
         solicitud={ofertasOf}
