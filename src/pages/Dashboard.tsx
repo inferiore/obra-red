@@ -8,6 +8,7 @@ import { ProgresoTrabajoDialog } from "@/components/ProgresoTrabajoDialog";
 import { EvidenciasUploadDialog } from "@/components/EvidenciasUploadDialog";
 import { CalificacionDialog } from "@/components/CalificacionDialog";
 import { getOfertasMock } from "@/lib/ofertas";
+import { getOfertasEnviadas, marcarOfertaEnviada } from "@/lib/ofertasEnviadas";
 import { Badge } from "@/components/ui/badge";
 import logo from "@/assets/obrared-logo.png";
 import { useNavigate } from "react-router-dom";
