@@ -302,6 +302,22 @@ const Dashboard = () => {
             </TabsList>
             <TabsContent value={filter} />
           </Tabs>
+          {isTrabajador && (
+            <Select value={tipoFilter} onValueChange={setTipoFilter}>
+              <SelectTrigger className="h-11 w-full md:w-56">
+                <Briefcase size={16} className="text-muted-foreground" />
+                <SelectValue placeholder="Especialidad" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">Todas las especialidades</SelectItem>
+                {TIPOS_TRABAJO.map((t) => (
+                  <SelectItem key={t.value} value={t.value}>
+                    {t.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
 
         {/* List */}
