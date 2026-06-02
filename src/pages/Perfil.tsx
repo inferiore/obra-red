@@ -733,6 +733,7 @@ const Perfil = () => {
           </TabsContent>
         </Tabs>
       </main>
+      <EditarPerfilDialog open={editOpen} onOpenChange={setEditOpen} />
     </div>
   );
 };
