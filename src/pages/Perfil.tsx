@@ -295,7 +295,7 @@ const Perfil = () => {
                 )}
               </div>
               <div className="flex flex-col sm:flex-row gap-2 md:self-center">
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
                   <Pencil size={14} />
                   Editar perfil
                 </Button>
