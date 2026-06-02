@@ -3,9 +3,9 @@ import type { AuthUser, UserRole } from "@/types/solicitud";
 
 // Hardcoded users (sin backend)
 export const HARDCODED_USERS: AuthUser[] = [
-  { username: "cliente", password: "cliente123", name: "Carlos Cliente", role: "cliente" },
-  { username: "trabajador", password: "trabajador123", name: "Tomás Trabajador", role: "trabajador" },
-  { username: "admin", password: "admin123", name: "Admin ObraRed", role: "admin" },
+  { username: "cliente", password: "obrared123", name: "Carlos Cliente", role: "cliente" },
+  { username: "trabajador", password: "obrared123", name: "Tomás Trabajador", role: "trabajador" },
+  { username: "admin", password: "obrared123", name: "Admin ObraRed", role: "admin" },
 ];
 
 const REGISTERED_KEY = "obrared_registered_users";
