@@ -36,6 +36,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useSolicitudes } from "@/context/SolicitudesContext";
 import { EstadoBadge } from "@/components/EstadoBadge";
 import { TIPOS_TRABAJO, type Solicitud } from "@/types/solicitud";
+import { EditarPerfilDialog } from "@/components/EditarPerfilDialog";
 
 const formatCOP = (n: number) =>
   new Intl.NumberFormat("es-CO", {
