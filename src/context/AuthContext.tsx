@@ -15,13 +15,19 @@ interface SessionUser {
   username: string;
   name: string;
   role: UserRole;
+  email?: string;
+  telefono?: string;
+  direccion?: string;
 }
+
+export type ProfileUpdate = Partial<Pick<SessionUser, "name" | "email" | "telefono" | "direccion">>;
 
 interface AuthContextValue {
   user: SessionUser | null;
   login: (username: string, password: string) => { ok: boolean; error?: string; role?: UserRole };
   logout: () => void;
   register: (data: AuthUser) => { ok: boolean; error?: string };
+  updateProfile: (data: ProfileUpdate) => { ok: boolean; error?: string };
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
