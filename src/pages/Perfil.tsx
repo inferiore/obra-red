@@ -36,6 +36,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useSolicitudes } from "@/context/SolicitudesContext";
 import { EstadoBadge } from "@/components/EstadoBadge";
 import { TIPOS_TRABAJO, type Solicitud } from "@/types/solicitud";
+import { EditarPerfilDialog } from "@/components/EditarPerfilDialog";
 
 const formatCOP = (n: number) =>
   new Intl.NumberFormat("es-CO", {
@@ -145,6 +146,7 @@ const Perfil = () => {
   const navigate = useNavigate();
   const [notifEmail, setNotifEmail] = useState(true);
   const [notifPush, setNotifPush] = useState(true);
+  const [editOpen, setEditOpen] = useState(false);
 
   const isCliente = user?.role === "cliente";
   const isTrabajador = user?.role === "trabajador";
@@ -293,7 +295,7 @@ const Perfil = () => {
                 )}
               </div>
               <div className="flex flex-col sm:flex-row gap-2 md:self-center">
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
                   <Pencil size={14} />
                   Editar perfil
                 </Button>
@@ -731,6 +733,7 @@ const Perfil = () => {
           </TabsContent>
         </Tabs>
       </main>
+      <EditarPerfilDialog open={editOpen} onOpenChange={setEditOpen} />
     </div>
   );
 };

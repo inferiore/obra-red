@@ -15,13 +15,19 @@ interface SessionUser {
   username: string;
   name: string;
   role: UserRole;
+  email?: string;
+  telefono?: string;
+  direccion?: string;
 }
+
+export type ProfileUpdate = Partial<Pick<SessionUser, "name" | "email" | "telefono" | "direccion">>;
 
 interface AuthContextValue {
   user: SessionUser | null;
   login: (username: string, password: string) => { ok: boolean; error?: string; role?: UserRole };
   logout: () => void;
   register: (data: AuthUser) => { ok: boolean; error?: string };
+  updateProfile: (data: ProfileUpdate) => { ok: boolean; error?: string };
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -72,6 +78,45 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(null);
   };
 
+  const updateProfile = useCallback<AuthContextValue["updateProfile"]>(
+    (data) => {
+      if (!user) return { ok: false, error: "No hay sesión activa" };
+      const name = data.name?.trim();
+      if (data.name !== undefined && !name) {
+        return { ok: false, error: "El nombre no puede estar vacío" };
+      }
+      const email = data.email?.trim();
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return { ok: false, error: "Correo electrónico inválido" };
+      }
+      const updated: SessionUser = {
+        ...user,
+        ...(name ? { name } : {}),
+        ...(data.email !== undefined ? { email } : {}),
+        ...(data.telefono !== undefined ? { telefono: data.telefono?.trim() } : {}),
+        ...(data.direccion !== undefined ? { direccion: data.direccion?.trim() } : {}),
+      };
+      // Persistir en sesión
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      setUser(updated);
+      // Persistir también en el listado de registrados (si aplica)
+      const registered = getRegistered();
+      const idx = registered.findIndex((u) => u.username === user.username);
+      if (idx >= 0) {
+        registered[idx] = {
+          ...registered[idx],
+          name: updated.name,
+          email: updated.email,
+          telefono: updated.telefono,
+          direccion: updated.direccion,
+        };
+        saveRegistered(registered);
+      }
+      return { ok: true };
+    },
+    [user],
+  );
+
   const register = useCallback<AuthContextValue["register"]>((data) => {
     const all = [...HARDCODED_USERS, ...getRegistered()];
     const username = data.username.trim().toLowerCase();
@@ -91,7 +136,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, register }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ user, login, logout, register, updateProfile }}>{children}</AuthContext.Provider>
   );
 };
 
