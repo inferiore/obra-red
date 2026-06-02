@@ -146,6 +146,7 @@ const Perfil = () => {
   const navigate = useNavigate();
   const [notifEmail, setNotifEmail] = useState(true);
   const [notifPush, setNotifPush] = useState(true);
+  const [editOpen, setEditOpen] = useState(false);
 
   const isCliente = user?.role === "cliente";
   const isTrabajador = user?.role === "trabajador";
