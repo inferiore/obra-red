@@ -50,6 +50,7 @@ export const EditarPerfilDialog = ({ open, onOpenChange }: Props) => {
   const { user, updateProfile } = useAuth();
   const [form, setForm] = useState({ name: "", email: "", telefono: "", direccion: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
     if (open && user) {
@@ -74,80 +75,105 @@ export const EditarPerfilDialog = ({ open, onOpenChange }: Props) => {
       setErrors(fieldErrors);
       return;
     }
+    setConfirmOpen(true);
+  };
+
+  const handleConfirmSave = () => {
+    const parsed = schema.safeParse(form);
+    if (!parsed.success) return;
     const res = updateProfile(parsed.data);
     if (!res.ok) {
       toast.error(res.error ?? "No se pudo actualizar el perfil");
+      setConfirmOpen(false);
       return;
     }
     toast.success("Perfil actualizado correctamente");
+    setConfirmOpen(false);
     onOpenChange(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Editar perfil</DialogTitle>
-          <DialogDescription>
-            Actualiza tu información personal. Los cambios se guardarán en tu cuenta.
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="name">Nombre completo</Label>
-            <Input
-              id="name"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              maxLength={80}
-              required
-            />
-            {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="email">Correo electrónico</Label>
-            <Input
-              id="email"
-              type="email"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              maxLength={255}
-              placeholder="tucorreo@ejemplo.com"
-            />
-            {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="telefono">Teléfono</Label>
-            <Input
-              id="telefono"
-              value={form.telefono}
-              onChange={(e) => setForm({ ...form, telefono: e.target.value })}
-              maxLength={20}
-              placeholder="+57 300 000 0000"
-            />
-            {errors.telefono && <p className="text-xs text-destructive">{errors.telefono}</p>}
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="direccion">Dirección</Label>
-            <Input
-              id="direccion"
-              value={form.direccion}
-              onChange={(e) => setForm({ ...form, direccion: e.target.value })}
-              maxLength={120}
-              placeholder="Calle, ciudad"
-            />
-            {errors.direccion && (
-              <p className="text-xs text-destructive">{errors.direccion}</p>
-            )}
-          </div>
-          <DialogFooter className="gap-2 sm:gap-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancelar
-            </Button>
-            <Button type="submit">Guardar cambios</Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar perfil</DialogTitle>
+            <DialogDescription>
+              Actualiza tu información personal. Los cambios se guardarán en tu cuenta.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="name">Nombre completo</Label>
+              <Input
+                id="name"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                maxLength={80}
+                required
+              />
+              {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="email">Correo electrónico</Label>
+              <Input
+                id="email"
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                maxLength={255}
+                placeholder="tucorreo@ejemplo.com"
+              />
+              {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="telefono">Teléfono</Label>
+              <Input
+                id="telefono"
+                value={form.telefono}
+                onChange={(e) => setForm({ ...form, telefono: e.target.value })}
+                maxLength={20}
+                placeholder="+57 300 000 0000"
+              />
+              {errors.telefono && <p className="text-xs text-destructive">{errors.telefono}</p>}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="direccion">Dirección</Label>
+              <Input
+                id="direccion"
+                value={form.direccion}
+                onChange={(e) => setForm({ ...form, direccion: e.target.value })}
+                maxLength={120}
+                placeholder="Calle, ciudad"
+              />
+              {errors.direccion && (
+                <p className="text-xs text-destructive">{errors.direccion}</p>
+              )}
+            </div>
+            <DialogFooter className="gap-2 sm:gap-2">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit">Guardar cambios</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Guardar cambios?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Estás a punto de actualizar tu información de perfil. ¿Deseas continuar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setConfirmOpen(false)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmSave}>Guardar cambios</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
