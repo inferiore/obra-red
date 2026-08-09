@@ -42,7 +42,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/context/AuthContext";
+import { useAuthStore } from "@/store/authStore";
 import { TIPOS_TRABAJO, type UserRole } from "@/types/solicitud";
 import { cn } from "@/lib/utils";
 
@@ -173,7 +173,7 @@ const FieldError = ({ msg }: { msg?: string }) =>
 const Register = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { register: registerUser } = useAuth();
+  const registerUser = useAuthStore((s) => s.register);
   const [params] = useSearchParams();
   const roleParam = params.get("role");
   const role: UserRole =
@@ -216,7 +216,7 @@ const Register = () => {
   const toggleArray = (arr: string[], value: string): string[] =>
     arr.includes(value) ? arr.filter((v) => v !== value) : [...arr, value];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
 
@@ -260,49 +260,47 @@ const Register = () => {
     }
 
     setLoading(true);
-    setTimeout(() => {
-      const payload = result.data;
-      const res = registerUser({
-        username: payload.username,
-        password: payload.password,
-        name: payload.nombre,
-        role,
-        email: payload.email,
-        telefono: payload.telefono,
-        documento: payload.documento,
-        ...(isCliente
-          ? {
-              tipoCliente: (payload as z.infer<typeof clienteSchema>).tipoCliente,
-              razonSocial: (payload as z.infer<typeof clienteSchema>).razonSocial,
-              nit: (payload as z.infer<typeof clienteSchema>).nit,
-              direccion: (payload as z.infer<typeof clienteSchema>).direccion,
-              barrio: (payload as z.infer<typeof clienteSchema>).barrio,
-            }
-          : {
-              especialidad: (payload as z.infer<typeof trabajadorSchema>).especialidad,
-              especialidadesExtra: (payload as z.infer<typeof trabajadorSchema>).especialidadesExtra,
-              experiencia: (payload as z.infer<typeof trabajadorSchema>).experiencia,
-              descripcionProfesional: (payload as z.infer<typeof trabajadorSchema>)
-                .descripcionProfesional,
-              zonasCobertura: (payload as z.infer<typeof trabajadorSchema>).zonasCobertura,
-            }),
-      });
+    const payload = result.data;
+    const res = await registerUser({
+      username: payload.username,
+      password: payload.password,
+      name: payload.nombre,
+      role,
+      email: payload.email,
+      telefono: payload.telefono,
+      documento: payload.documento,
+      ...(isCliente
+        ? {
+            tipoCliente: (payload as z.infer<typeof clienteSchema>).tipoCliente,
+            razonSocial: (payload as z.infer<typeof clienteSchema>).razonSocial,
+            nit: (payload as z.infer<typeof clienteSchema>).nit,
+            direccion: (payload as z.infer<typeof clienteSchema>).direccion,
+            barrio: (payload as z.infer<typeof clienteSchema>).barrio,
+          }
+        : {
+            especialidad: (payload as z.infer<typeof trabajadorSchema>).especialidad,
+            especialidadesExtra: (payload as z.infer<typeof trabajadorSchema>).especialidadesExtra,
+            experiencia: (payload as z.infer<typeof trabajadorSchema>).experiencia,
+            descripcionProfesional: (payload as z.infer<typeof trabajadorSchema>)
+              .descripcionProfesional,
+            zonasCobertura: (payload as z.infer<typeof trabajadorSchema>).zonasCobertura,
+          }),
+    });
 
-      setLoading(false);
-      if (!res.ok) {
-        toast({
-          title: "No se pudo crear la cuenta",
-          description: res.error,
-          variant: "destructive",
-        });
-        return;
-      }
+    setLoading(false);
+    if (!res.ok) {
       toast({
-        title: "¡Cuenta creada!",
-        description: `Bienvenido a ObraRed, ${payload.nombre.split(" ")[0]}.`,
+        title: "No se pudo crear la cuenta",
+        description: res.error,
+        variant: "destructive",
       });
-      navigate("/dashboard");
-    }, 400);
+      return;
+    }
+    toast({
+      title: "¡Cuenta creada!",
+      description: `Bienvenido a ObraRed, ${payload.nombre.split(" ")[0]}.`,
+    });
+    navigate("/dashboard");
   };
 
   /* -------------------- Render -------------------- */
@@ -829,7 +827,7 @@ const Register = () => {
             <div className="flex justify-center pt-2">
               <Badge variant="outline" className="gap-1.5 text-xs">
                 <Lock size={12} />
-                Tus datos se almacenan localmente en este dispositivo
+                Tus datos están protegidos y cifrados
               </Badge>
             </div>
           </div>

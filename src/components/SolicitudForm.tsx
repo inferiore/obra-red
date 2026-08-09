@@ -12,26 +12,36 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/context/AuthContext";
-import { useSolicitudes } from "@/context/SolicitudesContext";
-import { TIPOS_TRABAJO, type TipoTrabajo, type SolicitudEstado } from "@/types/solicitud";
+import { useAuthStore } from "@/store/authStore";
+import { useSolicitudesStore } from "@/store/solicitudesStore";
+import {
+  TIPOS_TRABAJO,
+  type TipoTrabajo,
+  type SolicitudEstado,
+  Solicitud,
+} from "@/types/solicitud";
 
 interface Props {
   onClose: () => void;
+  solicitud?: Solicitud;
 }
 
 const MAX_FOTOS = 5;
 
-export const SolicitudForm = ({ onClose }: Props) => {
-  const { user } = useAuth();
-  const { crear } = useSolicitudes();
+export const SolicitudForm = ({ onClose, solicitud }: Props) => {
+  const user = useAuthStore((s) => s.user);
+  const crear = useSolicitudesStore((s) => s.crear);
+  const actualizar = useSolicitudesStore((s) => s.actualizar);
+
   const { toast } = useToast();
 
-  const [tipo, setTipo] = useState<TipoTrabajo | "">("");
-  const [descripcion, setDescripcion] = useState("");
-  const [presupuesto, setPresupuesto] = useState("");
-  const [ubicacion, setUbicacion] = useState("");
-  const [fotos, setFotos] = useState<string[]>([]);
+  const [tipo, setTipo] = useState<TipoTrabajo | "">(solicitud?.tipo ?? "");
+  const [descripcion, setDescripcion] = useState(solicitud?.descripcion ?? "");
+  const [presupuesto, setPresupuesto] = useState(solicitud?.presupuesto ?? "");
+  const [ubicacion, setUbicacion] = useState(solicitud?.ubicacion ?? "");
+  const [fotos, setFotos] = useState<string[]>(
+    solicitud?.id ? solicitud.fotos : []
+  );
 
   const handleFotos = (files: FileList | null) => {
     if (!files) return;
@@ -48,9 +58,10 @@ export const SolicitudForm = ({ onClose }: Props) => {
     });
   };
 
-  const removeFoto = (idx: number) => setFotos((prev) => prev.filter((_, i) => i !== idx));
+  const removeFoto = (idx: number) =>
+    setFotos((prev) => prev.filter((_, i) => i !== idx));
 
-  const submit = (estado: SolicitudEstado) => {
+  const submit = async (estado: SolicitudEstado) => {
     if (!user) return;
     if (!tipo || !descripcion.trim() || !presupuesto) {
       toast({
@@ -63,7 +74,8 @@ export const SolicitudForm = ({ onClose }: Props) => {
     if (!ubicacion.trim() || ubicacion.trim().length < 5) {
       toast({
         title: "Ubicación inválida",
-        description: "Indica la dirección exacta del servicio (mínimo 5 caracteres).",
+        description:
+          "Indica la dirección exacta del servicio (mínimo 5 caracteres).",
         variant: "destructive",
       });
       return;
@@ -73,20 +85,30 @@ export const SolicitudForm = ({ onClose }: Props) => {
       toast({ title: "Presupuesto inválido", variant: "destructive" });
       return;
     }
-
-    crear({
-      clienteUsername: user.username,
-      clienteNombre: user.name,
-      tipo: tipo as TipoTrabajo,
-      descripcion: descripcion.trim(),
-      presupuesto: presupuestoNum,
-      ubicacion: ubicacion.trim(),
-      fotos,
-      estado,
-    });
+    if (!solicitud?.id) {
+      await crear({
+        tipo: tipo as TipoTrabajo,
+        descripcion: descripcion.trim(),
+        presupuesto: presupuestoNum,
+        ubicacion: ubicacion.trim(),
+        fotos,
+        estado,
+      });
+    } else {
+      await actualizar({
+        id: solicitud.id,
+        tipo: tipo as TipoTrabajo,
+        descripcion: descripcion.trim(),
+        presupuesto: presupuestoNum,
+        ubicacion: ubicacion.trim(),
+        fotos,
+        estado: estado,
+      });
+    }
 
     toast({
-      title: estado === "publicado" ? "Solicitud publicada" : "Borrador guardado",
+      title:
+        estado === "publicado" ? "Solicitud publicada" : "Borrador guardado",
       description:
         estado === "publicado"
           ? "Los trabajadores ya pueden ver tu solicitud."
@@ -137,7 +159,8 @@ export const SolicitudForm = ({ onClose }: Props) => {
           min={0}
         />
         <p className="text-xs text-muted-foreground">
-          Monto que estás dispuesto a pagar. Se retiene en escrow al aceptar oferta.
+          Monto que estás dispuesto a pagar. Se retiene en escrow al aceptar
+          oferta.
         </p>
       </div>
 
@@ -159,16 +182,26 @@ export const SolicitudForm = ({ onClose }: Props) => {
           />
         </div>
         <p className="text-xs text-muted-foreground">
-          Indica barrio, dirección y referencias para que el trabajador pueda llegar fácilmente.
+          Indica barrio, dirección y referencias para que el trabajador pueda
+          llegar fácilmente.
         </p>
       </div>
 
       <div className="space-y-2">
-        <Label>Fotos del inicio del trabajo ({fotos.length}/{MAX_FOTOS})</Label>
+        <Label>
+          Fotos del inicio del trabajo ({fotos.length}/{MAX_FOTOS})
+        </Label>
         <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
           {fotos.map((src, i) => (
-            <div key={i} className="relative group aspect-square rounded-lg overflow-hidden border border-border">
-              <img src={src} alt={`Foto ${i + 1}`} className="w-full h-full object-cover" />
+            <div
+              key={i}
+              className="relative group aspect-square rounded-lg overflow-hidden border border-border"
+            >
+              <img
+                src={src}
+                alt={`Foto ${i + 1}`}
+                className="w-full h-full object-cover"
+              />
               <button
                 type="button"
                 onClick={() => removeFoto(i)}
@@ -196,10 +229,19 @@ export const SolicitudForm = ({ onClose }: Props) => {
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 pt-2">
-        <Button type="button" variant="outline" className="flex-1 h-11" onClick={() => submit("borrador")}>
+        <Button
+          type="button"
+          variant="outline"
+          className="flex-1 h-11"
+          onClick={() => submit("borrador")}
+        >
           Guardar borrador
         </Button>
-        <Button type="button" className="flex-1 h-11" onClick={() => submit("publicado")}>
+        <Button
+          type="button"
+          className="flex-1 h-11"
+          onClick={() => submit("publicado")}
+        >
           Publicar solicitud
         </Button>
       </div>

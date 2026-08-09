@@ -15,6 +15,8 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { TIPOS_TRABAJO } from "@/types/solicitud";
 import type { Solicitud } from "@/types/solicitud";
+import { useCalificacionesStore } from "@/store/calificacionesStore";
+import { ApiError } from "@/lib/apiClient";
 
 const formatCOP = (n: number) =>
   new Intl.NumberFormat("es-CO", {
@@ -43,10 +45,12 @@ interface Props {
 
 export const CalificacionDialog = ({ solicitud, open, onOpenChange, onEnviado }: Props) => {
   const { toast } = useToast();
+  const crearCalificacion = useCalificacionesStore((s) => s.crear);
   const [score, setScore] = useState(0);
   const [hover, setHover] = useState(0);
   const [comentario, setComentario] = useState("");
   const [tags, setTags] = useState<string[]>([]);
+  const [enviando, setEnviando] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -62,7 +66,7 @@ export const CalificacionDialog = ({ solicitud, open, onOpenChange, onEnviado }:
   const toggleTag = (t: string) =>
     setTags((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
 
-  const handleEnviar = () => {
+  const handleEnviar = async () => {
     if (score === 0) {
       toast({
         title: "Selecciona una calificación",
@@ -71,12 +75,29 @@ export const CalificacionDialog = ({ solicitud, open, onOpenChange, onEnviado }:
       });
       return;
     }
-    onEnviado?.(solicitud.id, score);
-    toast({
-      title: "¡Reseña enviada!",
-      description: "Gracias por tu opinión, ayudas a mejorar la comunidad.",
-    });
-    onOpenChange(false);
+    setEnviando(true);
+    try {
+      await crearCalificacion({
+        solicitudId: solicitud.id,
+        estrellas: score,
+        comentario: comentario.trim() || undefined,
+        etiquetas: tags,
+      });
+      onEnviado?.(solicitud.id, score);
+      toast({
+        title: "¡Reseña enviada!",
+        description: "Gracias por tu opinión, ayudas a mejorar la comunidad.",
+      });
+      onOpenChange(false);
+    } catch (e) {
+      toast({
+        title: "No se pudo enviar la reseña",
+        description: e instanceof ApiError ? e.message : "Error de conexión con el servidor",
+        variant: "destructive",
+      });
+    } finally {
+      setEnviando(false);
+    }
   };
 
   return (
@@ -201,16 +222,21 @@ export const CalificacionDialog = ({ solicitud, open, onOpenChange, onEnviado }:
         </ScrollArea>
 
         <div className="border-t bg-background/95 backdrop-blur px-5 sm:px-6 py-4 shrink-0 flex flex-col-reverse sm:flex-row gap-2 sm:gap-3">
-          <Button variant="outline" className="sm:flex-1" onClick={() => onOpenChange(false)}>
+          <Button
+            variant="outline"
+            className="sm:flex-1"
+            onClick={() => onOpenChange(false)}
+            disabled={enviando}
+          >
             Más tarde
           </Button>
           <Button
             className="sm:flex-[2] bg-primary hover:bg-primary/90 shadow-elevated"
             onClick={handleEnviar}
-            disabled={score === 0}
+            disabled={score === 0 || enviando}
           >
             <Star size={16} />
-            Enviar reseña
+            {enviando ? "Enviando..." : "Enviar reseña"}
           </Button>
         </div>
       </DialogContent>

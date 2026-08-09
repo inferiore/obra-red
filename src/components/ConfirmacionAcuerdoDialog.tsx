@@ -5,7 +5,7 @@ import {
   CheckCircle2,
   Star,
   Briefcase,
-  Clock,
+  Calendar,
   MapPin,
   User,
   Lock,
@@ -188,13 +188,17 @@ export const ConfirmacionAcuerdoDialog = ({
                 </div>
                 <div className="rounded-lg bg-muted/40 p-3">
                   <p className="text-[10px] uppercase tracking-wide text-muted-foreground inline-flex items-center gap-1">
-                    <Clock size={11} /> Tiempo estimado
+                    <Calendar size={11} /> Inicia el
                   </p>
                   <p className="text-xl sm:text-2xl font-bold mt-1">
-                    {oferta.tiempoEstimadoDias}
-                    <span className="text-sm font-medium text-muted-foreground ml-1">
-                      {oferta.tiempoEstimadoDias === 1 ? "día" : "días"}
-                    </span>
+                    {oferta.fechaInicio ? (
+                      new Date(`${oferta.fechaInicio}T00:00:00`).toLocaleDateString("es-CO", {
+                        day: "2-digit",
+                        month: "short",
+                      })
+                    ) : (
+                      <span className="text-base font-medium text-muted-foreground">A confirmar</span>
+                    )}
                   </p>
                 </div>
               </div>

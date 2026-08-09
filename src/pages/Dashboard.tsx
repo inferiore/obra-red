@@ -1,14 +1,34 @@
-import { useMemo, useState } from "react";
-import { LogOut, Plus, Search, MapPin, DollarSign, CheckCircle2, Send, UserCircle, Eye, Users, Clock, Camera, Briefcase } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useEffect, useMemo, useState } from "react";
+import {
+  LogOut,
+  Plus,
+  Search,
+  MapPin,
+  DollarSign,
+  CheckCircle2,
+  Send,
+  UserCircle,
+  Eye,
+  Users,
+  Clock,
+  Camera,
+  Briefcase,
+  PenIcon,
+} from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { SolicitudDetailDialog } from "@/components/SolicitudDetailDialog";
 import { OfertasDialog } from "@/components/OfertasDialog";
 import { RevisionTrabajoDialog } from "@/components/RevisionTrabajoDialog";
 import { ProgresoTrabajoDialog } from "@/components/ProgresoTrabajoDialog";
 import { EvidenciasUploadDialog } from "@/components/EvidenciasUploadDialog";
 import { CalificacionDialog } from "@/components/CalificacionDialog";
-import { getOfertasMock } from "@/lib/ofertas";
-import { getOfertasEnviadas, marcarOfertaEnviada } from "@/lib/ofertasEnviadas";
+import { useOfertasStore } from "@/store/ofertasStore";
 import { Badge } from "@/components/ui/badge";
 import logo from "@/assets/obrared-logo.png";
 import { useNavigate } from "react-router-dom";
@@ -24,8 +44,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { useAuth } from "@/context/AuthContext";
-import { useSolicitudes } from "@/context/SolicitudesContext";
+import { useAuthStore } from "@/store/authStore";
+import { useSolicitudesStore } from "@/store/solicitudesStore";
 import { EstadoBadge } from "@/components/EstadoBadge";
 import { SolicitudForm } from "@/components/SolicitudForm";
 import {
@@ -36,10 +56,15 @@ import {
 } from "@/types/solicitud";
 import { useToast } from "@/hooks/use-toast";
 
-const tipoLabel = (tipo: string) => TIPOS_TRABAJO.find((t) => t.value === tipo)?.label ?? tipo;
+const tipoLabel = (tipo: string) =>
+  TIPOS_TRABAJO.find((t) => t.value === tipo)?.label ?? tipo;
 
 const formatCOP = (n: number) =>
-  new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(n);
+  new Intl.NumberFormat("es-CO", {
+    style: "currency",
+    currency: "COP",
+    maximumFractionDigits: 0,
+  }).format(n);
 
 const SolicitudCard = ({
   s,
@@ -52,7 +77,11 @@ const SolicitudCard = ({
 }: {
   s: Solicitud;
   action?: { label: string; onClick: () => void; icon?: React.ReactNode };
-  secondaryAction?: { label: string; onClick: () => void; icon?: React.ReactNode };
+  secondaryAction?: {
+    label: string;
+    onClick: () => void;
+    icon?: React.ReactNode;
+  };
   onVerMas?: () => void;
   onVerOfertas?: () => void;
   ofertasCount?: number;
@@ -67,16 +96,23 @@ const SolicitudCard = ({
           </p>
           {showCliente && (
             <p className="text-xs text-muted-foreground mt-0.5">
-              Cliente: <span className="font-medium text-foreground">{s.clienteNombre}</span>
+              Cliente:{" "}
+              <span className="font-medium text-foreground">
+                {s.clienteNombre}
+              </span>
             </p>
           )}
-          <CardTitle className="text-base mt-1 line-clamp-1">{s.descripcion}</CardTitle>
+          <CardTitle className="text-base mt-1 line-clamp-1">
+            {s.descripcion}
+          </CardTitle>
         </div>
         <EstadoBadge estado={s.estado} />
       </div>
     </CardHeader>
     <CardContent className="space-y-3">
-      <p className="text-sm text-muted-foreground line-clamp-2">{s.descripcion}</p>
+      <p className="text-sm text-muted-foreground line-clamp-2">
+        {s.descripcion}
+      </p>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
         <span className="inline-flex items-center gap-1 text-foreground font-semibold">
           <DollarSign size={14} className="text-primary" />
@@ -101,19 +137,34 @@ const SolicitudCard = ({
           </Button>
         )}
         {onVerMas && (
-          <Button onClick={onVerMas} variant="outline" size="sm" className="w-full">
+          <Button
+            onClick={onVerMas}
+            variant="outline"
+            size="sm"
+            className="w-full"
+          >
             <Eye size={14} />
             Ver más información
           </Button>
         )}
         {action && (
-          <Button onClick={action.onClick} className="w-full" size="sm" variant={onVerOfertas ? "outline" : "default"}>
+          <Button
+            onClick={action.onClick}
+            className="w-full"
+            size="sm"
+            variant={onVerOfertas ? "outline" : "default"}
+          >
             {action.icon}
             {action.label}
           </Button>
         )}
         {secondaryAction && (
-          <Button onClick={secondaryAction.onClick} variant="outline" size="sm" className="w-full">
+          <Button
+            onClick={secondaryAction.onClick}
+            variant="outline"
+            size="sm"
+            className="w-full"
+          >
             {secondaryAction.icon}
             {secondaryAction.label}
           </Button>
@@ -124,8 +175,14 @@ const SolicitudCard = ({
 );
 
 const Dashboard = () => {
-  const { user, logout } = useAuth();
-  const { solicitudes, porUsuario, actualizarEstado } = useSolicitudes();
+  const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
+  const solicitudes = useSolicitudesStore((s) => s.solicitudes);
+  const fetchAllSolicitudes = useSolicitudesStore((s) => s.fetchAll);
+  const porUsuario = useSolicitudesStore((s) => s.porUsuario);
+  const actualizarEstado = useSolicitudesStore((s) => s.actualizarEstado);
+  const ofertasBySolicitud = useOfertasStore((s) => s.bySolicitud);
+  const fetchOfertasBySolicitud = useOfertasStore((s) => s.fetchBySolicitud);
   const navigate = useNavigate();
   const { toast } = useToast();
   const [openForm, setOpenForm] = useState(false);
@@ -134,18 +191,25 @@ const Dashboard = () => {
   const [search, setSearch] = useState("");
   const [detalle, setDetalle] = useState<Solicitud | null>(null);
   const [ofertasOf, setOfertasOf] = useState<Solicitud | null>(null);
-  const [revisionOf, setRevisionOf] = useState<Solicitud | null>(null);
+  const [revisionOfId, setRevisionOfId] = useState<string | null>(null);
+  const revisionOf = solicitudes.find((s) => s.id === revisionOfId) ?? null;
   const [progresoOf, setProgresoOf] = useState<Solicitud | null>(null);
-  const [evidenciasOf, setEvidenciasOf] = useState<Solicitud | null>(null);
+  const [evidenciasOfId, setEvidenciasOfId] = useState<string | null>(null);
+  const evidenciasOf = solicitudes.find((s) => s.id === evidenciasOfId) ?? null;
   const [calificarOf, setCalificarOf] = useState<Solicitud | null>(null);
-  const [ofertasEnviadas, setOfertasEnviadas] = useState<string[]>(() =>
-    getOfertasEnviadas(user?.username ?? ""),
-  );
+  const [solicitud, setSolicitud] = useState<Solicitud | null>(null);
 
-  const handleOfertaEnviada = (solicitudId: string) => {
-    marcarOfertaEnviada(user?.username ?? "", solicitudId);
-    setOfertasEnviadas((prev) => (prev.includes(solicitudId) ? prev : [...prev, solicitudId]));
+  useEffect(() => {
+    fetchAllSolicitudes();
+  }, [fetchAllSolicitudes]);
+
+  const handleOfertaEnviada = () => {
     setDetalle(null);
+  };
+
+  const handleActualizar = (s) => {
+    setSolicitud(s);
+    setOpenForm(true);
   };
 
   const isCliente = user?.role === "cliente";
@@ -157,20 +221,25 @@ const Dashboard = () => {
     navigate("/login");
   };
 
-  const tomar = (id: string) => {
-    actualizarEstado(id, "ejecucion", username);
-    toast({ title: "Trabajo aceptado", description: "La solicitud está en ejecución." });
-  };
-
-  const finalizar = (s: Solicitud) => {
-    actualizarEstado(s.id, "finalizado");
+  const finalizar = async (s: Solicitud) => {
+    await actualizarEstado(s.id, "finalizado");
     toast({
       title: "Pago liberado al trabajador",
       description: "El trabajo se marcó como completado. Califica el servicio.",
     });
-    setRevisionOf(null);
+    setRevisionOfId(null);
     setCalificarOf({ ...s, estado: "finalizado" });
   };
+
+  // ids de solicitudes a las que el trabajador actual ya envió una oferta
+  const misOfertasSolicitudIds = useMemo(() => {
+    if (!isTrabajador) return [];
+    return Object.entries(ofertasBySolicitud)
+      .filter(([, ofertas]) =>
+        ofertas.some((o) => o.trabajadorUsername === username)
+      )
+      .map(([id]) => id);
+  }, [isTrabajador, ofertasBySolicitud, username]);
 
   const baseList = useMemo(() => {
     if (!user) return [];
@@ -178,12 +247,33 @@ const Dashboard = () => {
     if (isTrabajador) {
       return solicitudes.filter(
         (s) =>
-          (s.estado === "publicado" && !ofertasEnviadas.includes(s.id)) ||
-          (s.trabajadorAsignado === username && s.estado !== "borrador"),
+          (s.estado === "publicado" &&
+            !misOfertasSolicitudIds.includes(s.id)) ||
+          (s.trabajadorAsignado === username && s.estado !== "borrador")
       );
     }
     return solicitudes;
-  }, [user, isCliente, isTrabajador, porUsuario, solicitudes, username, ofertasEnviadas]);
+  }, [
+    user,
+    isCliente,
+    isTrabajador,
+    porUsuario,
+    solicitudes,
+    username,
+    misOfertasSolicitudIds,
+  ]);
+
+  // Precarga las ofertas de las solicitudes visibles (para conteos y para saber
+  // si el trabajador actual ya ofertó en una publicada).
+  useEffect(() => {
+    solicitudes
+      .filter(
+        (s) =>
+          (s.estado === "publicado" || s.estado === "ejecucion") &&
+          !(s.id in ofertasBySolicitud)
+      )
+      .forEach((s) => fetchOfertasBySolicitud(s.id));
+  }, [solicitudes, ofertasBySolicitud, fetchOfertasBySolicitud]);
 
   const filtered = useMemo(() => {
     return baseList.filter((s) => {
@@ -202,6 +292,8 @@ const Dashboard = () => {
     borrador: baseList.filter((s) => s.estado === "borrador").length,
     publicado: baseList.filter((s) => s.estado === "publicado").length,
     ejecucion: baseList.filter((s) => s.estado === "ejecucion").length,
+    revision: baseList.filter((s) => s.estado === "revision").length,
+    corrigiendo: baseList.filter((s) => s.estado === "corrigiendo").length,
     finalizado: baseList.filter((s) => s.estado === "finalizado").length,
   };
 
@@ -214,8 +306,15 @@ const Dashboard = () => {
       {/* Header */}
       <header className="bg-card border-b border-border sticky top-0 z-40">
         <div className="container mx-auto flex items-center justify-between h-16 px-4">
-          <button onClick={() => navigate("/")} className="flex items-center gap-2">
-            <img src={logo} alt="ObraRed" className="w-9 h-9 rounded-lg object-cover" />
+          <button
+            onClick={() => navigate("/")}
+            className="flex items-center gap-2"
+          >
+            <img
+              src={logo}
+              alt="ObraRed"
+              className="w-9 h-9 rounded-lg object-cover"
+            />
             <span className="text-lg font-bold">
               Obra<span className="text-primary">Red</span>
             </span>
@@ -225,10 +324,18 @@ const Dashboard = () => {
               onClick={() => navigate("/perfil")}
               className="hidden sm:flex flex-col items-end text-right hover:opacity-80 transition-opacity"
             >
-              <span className="text-sm font-medium leading-tight">{user.name}</span>
-              <span className="text-xs text-muted-foreground capitalize">{user.role}</span>
+              <span className="text-sm font-medium leading-tight">
+                {user.name}
+              </span>
+              <span className="text-xs text-muted-foreground capitalize">
+                {user.role}
+              </span>
             </button>
-            <Button variant="outline" size="sm" onClick={() => navigate("/perfil")}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate("/perfil")}
+            >
               <UserCircle size={16} />
               <span className="hidden sm:inline">Mi perfil</span>
             </Button>
@@ -245,14 +352,18 @@ const Dashboard = () => {
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold">
-              {isCliente ? "Mis solicitudes" : isTrabajador ? "Trabajos disponibles" : "Todas las solicitudes"}
+              {isCliente
+                ? "Mis solicitudes"
+                : isTrabajador
+                ? "Trabajos disponibles"
+                : "Todas las solicitudes"}
             </h1>
             <p className="text-muted-foreground text-sm mt-1">
               {isCliente
                 ? "Publica trabajos y recibe ofertas de profesionales verificados."
                 : isTrabajador
-                  ? "Encuentra y acepta trabajos publicados por clientes."
-                  : "Vista global de todas las solicitudes en la plataforma."}
+                ? "Encuentra y acepta trabajos publicados por clientes."
+                : "Vista global de todas las solicitudes en la plataforma."}
             </p>
           </div>
 
@@ -268,17 +379,21 @@ const Dashboard = () => {
                 <DialogHeader>
                   <DialogTitle>Nueva solicitud de trabajo</DialogTitle>
                   <DialogDescription>
-                    Completa los datos. Puedes guardar como borrador o publicar de inmediato.
+                    Completa los datos. Puedes guardar como borrador o publicar
+                    de inmediato.
                   </DialogDescription>
                 </DialogHeader>
-                <SolicitudForm onClose={() => setOpenForm(false)} />
+                <SolicitudForm
+                  onClose={() => setOpenForm(false)}
+                  solicitud={solicitud}
+                />
               </DialogContent>
             </Dialog>
           )}
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           {(Object.keys(stats) as SolicitudEstado[]).map((e) => (
             <Card key={e} className="shadow-soft">
               <CardContent className="p-4">
@@ -294,7 +409,10 @@ const Dashboard = () => {
         {/* Filters */}
         <div className="flex flex-col md:flex-row gap-3">
           <div className="relative flex-1">
-            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Search
+              size={18}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+            />
             <Input
               placeholder="Buscar por descripción o tipo..."
               value={search}
@@ -302,12 +420,17 @@ const Dashboard = () => {
               className="pl-10 h-11"
             />
           </div>
-          <Tabs value={filter} onValueChange={(v) => setFilter(v as SolicitudEstado | "todas")}>
-            <TabsList className="grid grid-cols-5 w-full md:w-auto">
+          <Tabs
+            value={filter}
+            onValueChange={(v) => setFilter(v as SolicitudEstado | "todas")}
+          >
+            <TabsList className="grid grid-cols-4 sm:grid-cols-7 w-full md:w-auto">
               <TabsTrigger value="todas">Todas</TabsTrigger>
               <TabsTrigger value="borrador">Borr.</TabsTrigger>
               <TabsTrigger value="publicado">Public.</TabsTrigger>
               <TabsTrigger value="ejecucion">Ejec.</TabsTrigger>
+              <TabsTrigger value="revision">Revis.</TabsTrigger>
+              <TabsTrigger value="corrigiendo">Correc.</TabsTrigger>
               <TabsTrigger value="finalizado">Final.</TabsTrigger>
             </TabsList>
             <TabsContent value={filter} />
@@ -334,7 +457,9 @@ const Dashboard = () => {
         {filtered.length === 0 ? (
           <Card>
             <CardContent className="py-16 text-center">
-              <p className="text-muted-foreground">No hay solicitudes que coincidan.</p>
+              <p className="text-muted-foreground">
+                No hay solicitudes que coincidan.
+              </p>
               {isCliente && (
                 <Button className="mt-4" onClick={() => setOpenForm(true)}>
                   <Plus size={16} />
@@ -347,24 +472,33 @@ const Dashboard = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map((s) => {
               let action: Parameters<typeof SolicitudCard>[0]["action"];
-              let secondaryAction: Parameters<typeof SolicitudCard>[0]["secondaryAction"];
+              let secondaryAction: Parameters<
+                typeof SolicitudCard
+              >[0]["secondaryAction"];
 
-              if (isTrabajador && s.estado === "publicado") {
+              if (
+                isTrabajador &&
+                (s.estado === "ejecucion" || s.estado === "corrigiendo")
+              ) {
                 action = {
-                  label: "Tomar trabajo",
-                  onClick: () => tomar(s.id),
-                  icon: <Send size={14} />,
-                };
-              } else if (isTrabajador && s.estado === "ejecucion") {
-                action = {
-                  label: "Subir evidencias",
-                  onClick: () => setEvidenciasOf(s),
+                  label:
+                    s.estado === "corrigiendo" ? "Corregir y reenviar" : "Subir evidencias",
+                  onClick: () => setEvidenciasOfId(s.id),
                   icon: <Camera size={14} />,
                 };
-              } else if (isCliente && s.estado === "ejecucion") {
+              } else if (
+                isCliente &&
+                (s.estado === "ejecucion" || s.estado === "corrigiendo")
+              ) {
+                action = {
+                  label: "Ver progreso",
+                  onClick: () => setProgresoOf(s),
+                  icon: <Clock size={14} />,
+                };
+              } else if (isCliente && s.estado === "revision") {
                 action = {
                   label: "Revisar y aprobar trabajo",
-                  onClick: () => setRevisionOf(s),
+                  onClick: () => setRevisionOfId(s.id),
                   icon: <CheckCircle2 size={14} />,
                 };
                 secondaryAction = {
@@ -381,6 +515,11 @@ const Dashboard = () => {
                   },
                   icon: <Send size={14} />,
                 };
+                secondaryAction = {
+                  label: "Actualizar",
+                  onClick: () => handleActualizar(s),
+                  icon: <PenIcon size={14} />,
+                };
               } else if (isCliente && s.estado === "finalizado") {
                 action = {
                   label: "Calificar servicio",
@@ -390,8 +529,9 @@ const Dashboard = () => {
               }
 
               const ofertasCount =
-                isCliente && (s.estado === "publicado" || s.estado === "ejecucion")
-                  ? getOfertasMock(s.id, s.presupuesto).length
+                isCliente &&
+                (s.estado === "publicado" || s.estado === "ejecucion")
+                  ? ofertasBySolicitud[s.id]?.length
                   : undefined;
               return (
                 <SolicitudCard
@@ -402,7 +542,9 @@ const Dashboard = () => {
                   showCliente={!isCliente}
                   onVerMas={isTrabajador ? () => setDetalle(s) : undefined}
                   onVerOfertas={
-                    isCliente && s.estado === "publicado" ? () => setOfertasOf(s) : undefined
+                    isCliente && s.estado === "publicado"
+                      ? () => setOfertasOf(s)
+                      : undefined
                   }
                   ofertasCount={ofertasCount}
                 />
@@ -422,12 +564,12 @@ const Dashboard = () => {
         solicitud={ofertasOf}
         open={!!ofertasOf}
         onOpenChange={(v) => !v && setOfertasOf(null)}
-        onAceptar={(id) => actualizarEstado(id, "ejecucion")}
+        onAceptar={() => fetchAllSolicitudes()}
       />
       <RevisionTrabajoDialog
         solicitud={revisionOf}
-        open={!!revisionOf}
-        onOpenChange={(v) => !v && setRevisionOf(null)}
+        open={!!revisionOfId}
+        onOpenChange={(v) => !v && setRevisionOfId(null)}
         onAprobar={() => revisionOf && finalizar(revisionOf)}
       />
       <ProgresoTrabajoDialog
@@ -437,8 +579,8 @@ const Dashboard = () => {
       />
       <EvidenciasUploadDialog
         solicitud={evidenciasOf}
-        open={!!evidenciasOf}
-        onOpenChange={(v) => !v && setEvidenciasOf(null)}
+        open={!!evidenciasOfId}
+        onOpenChange={(v) => !v && setEvidenciasOfId(null)}
       />
       <CalificacionDialog
         solicitud={calificarOf}

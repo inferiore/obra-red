@@ -7,13 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth, HARDCODED_USERS } from "@/context/AuthContext";
+import { useAuthStore, DEMO_USERS } from "@/store/authStore";
 import type { UserRole } from "@/types/solicitud";
 
 const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { login } = useAuth();
+  const login = useAuthStore((s) => s.login);
   const [params] = useSearchParams();
   const roleParam = params.get("role") as UserRole | null;
   const mode = params.get("mode") === "register" ? "register" : "login";
@@ -27,43 +27,41 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
 
   const visibleUsers = useMemo(
-    () => (selectedRole ? HARDCODED_USERS.filter((u) => u.role === selectedRole) : HARDCODED_USERS),
+    () => (selectedRole ? DEMO_USERS.filter((u) => u.role === selectedRole) : DEMO_USERS),
     [selectedRole],
   );
 
   const roleLabel = selectedRole === "cliente" ? "Cliente" : selectedRole === "trabajador" ? "Trabajador" : null;
   const RoleIcon = selectedRole === "trabajador" ? Hammer : User;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    setTimeout(() => {
-      const result = login(username, password);
-      if (result.ok) {
-        if (selectedRole && result.role !== selectedRole) {
-          toast({
-            title: "Rol incorrecto",
-            description: `Esta cuenta no es de tipo ${roleLabel}.`,
-            variant: "destructive",
-          });
-          setLoading(false);
-          return;
-        }
+    const result = await login(username, password);
+    if (result.ok) {
+      if (selectedRole && result.role !== selectedRole) {
         toast({
-          title: "¡Bienvenido!",
-          description: `Sesión iniciada como ${result.role}.`,
-        });
-        navigate("/dashboard");
-      } else {
-        toast({
-          title: "Credenciales incorrectas",
-          description: result.error ?? "Verifica tu usuario y contraseña.",
+          title: "Rol incorrecto",
+          description: `Esta cuenta no es de tipo ${roleLabel}.`,
           variant: "destructive",
         });
+        setLoading(false);
+        return;
       }
-      setLoading(false);
-    }, 300);
+      toast({
+        title: "¡Bienvenido!",
+        description: `Sesión iniciada como ${result.role}.`,
+      });
+      navigate("/dashboard");
+    } else {
+      toast({
+        title: "Credenciales incorrectas",
+        description: result.error ?? "Verifica tu usuario y contraseña.",
+        variant: "destructive",
+      });
+    }
+    setLoading(false);
   };
 
   const quickLogin = (u: string, p: string) => {

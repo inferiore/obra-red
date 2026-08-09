@@ -14,6 +14,8 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import type { Solicitud } from "@/types/solicitud";
+import { useSolicitudesStore } from "@/store/solicitudesStore";
+import { ApiError } from "@/lib/apiClient";
 
 const ETAPAS = [
   { key: "antes" as const, label: "Antes", desc: "Estado inicial del lugar" },
@@ -27,22 +29,24 @@ interface Props {
   solicitud: Solicitud | null;
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  onEnviarParaRevision?: (id: string) => void;
+  onEnviado?: (id: string) => void;
 }
 
 export const EvidenciasUploadDialog = ({
   solicitud,
   open,
   onOpenChange,
-  onEnviarParaRevision,
+  onEnviado,
 }: Props) => {
   const { toast } = useToast();
+  const subirEvidencias = useSolicitudesStore((s) => s.subirEvidencias);
   const [evidencias, setEvidencias] = useState<Record<Etapa, string[]>>({
     antes: [],
     durante: [],
     despues: [],
   });
   const [nota, setNota] = useState("");
+  const [enviando, setEnviando] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -80,7 +84,7 @@ export const EvidenciasUploadDialog = ({
   const totalEv = evidencias.antes.length + evidencias.durante.length + evidencias.despues.length;
   const completo = evidencias.despues.length > 0;
 
-  const handleEnviar = () => {
+  const handleEnviar = async () => {
     if (!completo) {
       toast({
         title: "Falta evidencia final",
@@ -89,12 +93,29 @@ export const EvidenciasUploadDialog = ({
       });
       return;
     }
-    onEnviarParaRevision?.(solicitud.id);
-    toast({
-      title: "Evidencias enviadas",
-      description: "El cliente revisará el trabajo y aprobará la liberación del pago.",
-    });
-    onOpenChange(false);
+    setEnviando(true);
+    try {
+      await subirEvidencias(solicitud.id, {
+        antes: evidencias.antes,
+        durante: evidencias.durante,
+        despues: evidencias.despues,
+        nota: nota.trim() || undefined,
+      });
+      toast({
+        title: "Evidencias enviadas",
+        description: "El cliente revisará el trabajo y aprobará la liberación del pago.",
+      });
+      onEnviado?.(solicitud.id);
+      onOpenChange(false);
+    } catch (e) {
+      toast({
+        title: "No se pudieron enviar las evidencias",
+        description: e instanceof ApiError ? e.message : "Error de conexión con el servidor",
+        variant: "destructive",
+      });
+    } finally {
+      setEnviando(false);
+    }
   };
 
   return (
@@ -106,7 +127,9 @@ export const EvidenciasUploadDialog = ({
               <Camera size={20} />
             </div>
             <div className="min-w-0">
-              <DialogTitle className="text-lg sm:text-xl">Subir evidencias</DialogTitle>
+              <DialogTitle className="text-lg sm:text-xl">
+                {solicitud.estado === "corrigiendo" ? "Corregir y reenviar evidencias" : "Subir evidencias"}
+              </DialogTitle>
               <DialogDescription>
                 Documenta el trabajo en cada etapa para activar la liberación del pago.
               </DialogDescription>
@@ -116,6 +139,16 @@ export const EvidenciasUploadDialog = ({
 
         <ScrollArea className="min-h-0">
           <div className="px-5 sm:px-6 py-5 space-y-4">
+            {solicitud.estado === "corrigiendo" && solicitud.correccionComentario && (
+              <div className="rounded-lg border border-orange-300 dark:border-orange-500/40 bg-orange-50 dark:bg-orange-500/10 p-4">
+                <p className="text-xs font-semibold text-orange-800 dark:text-orange-300 uppercase tracking-wide mb-1">
+                  El cliente pidió corregir
+                </p>
+                <p className="text-sm text-orange-900/90 dark:text-orange-200/90 whitespace-pre-line">
+                  {solicitud.correccionComentario}
+                </p>
+              </div>
+            )}
             {ETAPAS.map((etapa) => (
               <div key={etapa.key} className="rounded-xl border bg-card p-4 shadow-soft">
                 <div className="flex items-center justify-between mb-2">
@@ -188,16 +221,21 @@ export const EvidenciasUploadDialog = ({
         </ScrollArea>
 
         <div className="border-t bg-background/95 backdrop-blur px-5 sm:px-6 py-4 shrink-0 flex flex-col-reverse sm:flex-row gap-2 sm:gap-3">
-          <Button variant="outline" className="sm:flex-1" onClick={() => onOpenChange(false)}>
-            Guardar borrador
+          <Button
+            variant="outline"
+            className="sm:flex-1"
+            onClick={() => onOpenChange(false)}
+            disabled={enviando}
+          >
+            Cancelar
           </Button>
           <Button
             className="sm:flex-[2] bg-emerald-600 hover:bg-emerald-700 text-white shadow-elevated"
             onClick={handleEnviar}
-            disabled={!completo}
+            disabled={!completo || enviando}
           >
             {completo ? <CheckCircle2 size={16} /> : <Send size={16} />}
-            Enviar para revisión del cliente
+            {enviando ? "Enviando..." : "Enviar para revisión del cliente"}
           </Button>
         </div>
       </DialogContent>

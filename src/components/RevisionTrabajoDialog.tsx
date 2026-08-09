@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Clock,
   ShieldCheck,
@@ -34,6 +34,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import type { Solicitud } from "@/types/solicitud";
+import { useSolicitudesStore } from "@/store/solicitudesStore";
+import { ApiError } from "@/lib/apiClient";
 
 interface Props {
   solicitud: Solicitud | null;
@@ -56,19 +58,32 @@ const CHECKLIST = [
 
 export const RevisionTrabajoDialog = ({ solicitud, open, onOpenChange, onAprobar }: Props) => {
   const { toast } = useToast();
+  const fetchOne = useSolicitudesStore((s) => s.fetchOne);
+  const solicitarCorreccion = useSolicitudesStore((s) => s.solicitarCorreccion);
   const [zoom, setZoom] = useState<{ label: string; src?: string } | null>(null);
   const [checks, setChecks] = useState<boolean[]>([false, false, false]);
   const [showCorreccion, setShowCorreccion] = useState(false);
   const [comentario, setComentario] = useState("");
   const [confirmAprobar, setConfirmAprobar] = useState(false);
   const [confirmDisputa, setConfirmDisputa] = useState(false);
+  const [cargandoDetalle, setCargandoDetalle] = useState(false);
+  const [enviandoCorreccion, setEnviandoCorreccion] = useState(false);
+
+  const solicitudId = solicitud?.id;
+  useEffect(() => {
+    if (open && solicitudId) {
+      setCargandoDetalle(true);
+      fetchOne(solicitudId).finally(() => setCargandoDetalle(false));
+    }
+  }, [open, solicitudId, fetchOne]);
 
   if (!solicitud) return null;
 
-  const evidencias = ETAPAS.map((etapa, i) => ({
-    ...etapa,
-    src: solicitud.fotos[i],
-  }));
+  const evidencias = [
+    { ...ETAPAS[0], fotos: solicitud.evidenciaAntes ?? [] },
+    { ...ETAPAS[1], fotos: solicitud.evidenciaDurante ?? [] },
+    { ...ETAPAS[2], fotos: solicitud.evidenciaDespues ?? [] },
+  ];
 
   const reset = () => {
     setChecks([false, false, false]);
@@ -87,7 +102,7 @@ export const RevisionTrabajoDialog = ({ solicitud, open, onOpenChange, onAprobar
     onOpenChange(false);
   };
 
-  const handleEnviarCorreccion = () => {
+  const handleEnviarCorreccion = async () => {
     if (comentario.trim().length < 10) {
       toast({
         title: "Comentario muy corto",
@@ -96,12 +111,24 @@ export const RevisionTrabajoDialog = ({ solicitud, open, onOpenChange, onAprobar
       });
       return;
     }
-    toast({
-      title: "Solicitud de corrección enviada",
-      description: "El trabajador recibirá tu comentario y podrá ajustar el trabajo.",
-    });
-    reset();
-    onOpenChange(false);
+    setEnviandoCorreccion(true);
+    try {
+      await solicitarCorreccion(solicitud.id, comentario.trim());
+      toast({
+        title: "Solicitud de corrección enviada",
+        description: "El trabajador recibirá tu comentario y podrá ajustar el trabajo.",
+      });
+      reset();
+      onOpenChange(false);
+    } catch (e) {
+      toast({
+        title: "No se pudo enviar la corrección",
+        description: e instanceof ApiError ? e.message : "Error de conexión con el servidor",
+        variant: "destructive",
+      });
+    } finally {
+      setEnviandoCorreccion(false);
+    }
   };
 
   const handleDisputa = () => {
@@ -162,41 +189,60 @@ export const RevisionTrabajoDialog = ({ solicitud, open, onOpenChange, onAprobar
                   </h3>
                 </div>
 
-                {/* Mobile: scroll horizontal — Desktop: grid 3 cols */}
-                <div className="flex md:grid md:grid-cols-3 gap-3 overflow-x-auto md:overflow-visible -mx-5 px-5 md:mx-0 md:px-0 snap-x snap-mandatory pb-2">
+                {cargandoDetalle ? (
+                  <div className="rounded-lg border bg-muted/30 py-10 flex flex-col items-center justify-center text-muted-foreground">
+                    <ImageIcon size={24} className="mb-2 opacity-60 animate-pulse" />
+                    <span className="text-sm">Cargando evidencias...</span>
+                  </div>
+                ) : (
+                <div className="space-y-3">
                   {evidencias.map((ev) => (
-                    <button
-                      key={ev.key}
-                      type="button"
-                      onClick={() => setZoom({ label: ev.label, src: ev.src })}
-                      className="group relative shrink-0 w-[78%] md:w-auto snap-center text-left rounded-lg border bg-card overflow-hidden hover:shadow-elevated hover:border-primary/40 transition-all"
-                    >
-                      <div className="aspect-[4/3] bg-muted relative overflow-hidden">
-                        {ev.src ? (
-                          <img
-                            src={ev.src}
-                            alt={`Evidencia ${ev.label}`}
-                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground">
-                            <ImageIcon size={28} className="mb-1 opacity-60" />
-                            <span className="text-xs">Sin imagen</span>
-                          </div>
-                        )}
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                          <span className="bg-white/90 text-foreground rounded-full p-2">
-                            <ZoomIn size={16} />
-                          </span>
+                    <div key={ev.key} className="rounded-lg border bg-card p-3">
+                      <p className="text-sm font-semibold">{ev.label}</p>
+                      <p className="text-xs text-muted-foreground mb-2">{ev.desc}</p>
+                      {ev.fotos.length === 0 ? (
+                        <div className="rounded-md bg-muted/40 py-6 flex flex-col items-center justify-center text-muted-foreground">
+                          <ImageIcon size={24} className="mb-1 opacity-60" />
+                          <span className="text-xs">Sin fotos en esta etapa</span>
                         </div>
-                      </div>
-                      <div className="p-3">
-                        <p className="text-sm font-semibold">{ev.label}</p>
-                        <p className="text-xs text-muted-foreground">{ev.desc}</p>
-                      </div>
-                    </button>
+                      ) : (
+                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                          {ev.fotos.map((src, i) => (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={() => setZoom({ label: `${ev.label} ${i + 1}`, src })}
+                              className="group relative aspect-square rounded-lg overflow-hidden border bg-muted hover:border-primary/40 transition-all"
+                            >
+                              <img
+                                src={src}
+                                alt={`${ev.label} ${i + 1}`}
+                                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                              />
+                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                <span className="bg-white/90 text-foreground rounded-full p-1.5">
+                                  <ZoomIn size={14} />
+                                </span>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
+                )}
+
+                {!cargandoDetalle && solicitud.evidenciaNota && (
+                  <div className="mt-3 rounded-lg border border-primary/20 bg-primary/5 p-3">
+                    <p className="text-xs font-semibold text-primary uppercase tracking-wide mb-1">
+                      Nota del trabajador
+                    </p>
+                    <p className="text-sm text-foreground/90 whitespace-pre-line">
+                      {solicitud.evidenciaNota}
+                    </p>
+                  </div>
+                )}
               </section>
 
               {/* Checklist */}
@@ -263,15 +309,21 @@ export const RevisionTrabajoDialog = ({ solicitud, open, onOpenChange, onAprobar
                     rows={4}
                   />
                   <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
-                    <Button variant="ghost" size="sm" onClick={() => setShowCorreccion(false)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowCorreccion(false)}
+                      disabled={enviandoCorreccion}
+                    >
                       Cancelar
                     </Button>
                     <Button
                       size="sm"
                       onClick={handleEnviarCorreccion}
+                      disabled={enviandoCorreccion}
                       className="bg-orange-500 hover:bg-orange-600 text-white"
                     >
-                      Enviar solicitud de corrección
+                      {enviandoCorreccion ? "Enviando..." : "Enviar solicitud de corrección"}
                     </Button>
                   </div>
                 </section>

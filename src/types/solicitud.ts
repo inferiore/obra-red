@@ -23,7 +23,13 @@ export interface AuthUser {
   zonasCobertura?: string[];
 }
 
-export type SolicitudEstado = "borrador" | "publicado" | "ejecucion" | "finalizado";
+export type SolicitudEstado =
+  | "borrador"
+  | "publicado"
+  | "ejecucion"
+  | "revision"
+  | "corrigiendo"
+  | "finalizado";
 
 export type TipoTrabajo =
   | "albanileria"
@@ -61,6 +67,13 @@ export interface Solicitud {
   fotos: string[]; // data URLs
   estado: SolicitudEstado;
   trabajadorAsignado?: string;
+  // No vienen en el listado (GET /solicitudes) por su peso — solo al pedir
+  // el detalle de una solicitud puntual (GET /solicitudes/:id).
+  evidenciaAntes?: string[];
+  evidenciaDurante?: string[];
+  evidenciaDespues?: string[];
+  evidenciaNota?: string;
+  correccionComentario?: string;
   createdAt: string;
 }
 
@@ -68,5 +81,7 @@ export const ESTADO_LABELS: Record<SolicitudEstado, string> = {
   borrador: "Borrador",
   publicado: "Publicado",
   ejecucion: "En ejecución",
+  revision: "En revisión",
+  corrigiendo: "Corrigiendo",
   finalizado: "Finalizado",
 };

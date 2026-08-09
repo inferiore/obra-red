@@ -1,0 +1,30 @@
+services:
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ./server/.env.production
+    environment:
+      PORT: 3001
+      DB_PATH: /app/data/obrared.sqlite
+    volumes:
+      - sqlite-data:/app/data
+    expose:
+      - "3001"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: /api
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+
+volumes:
+  sqlite-data:

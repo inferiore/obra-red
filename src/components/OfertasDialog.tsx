@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ConfirmacionAcuerdoDialog } from "@/components/ConfirmacionAcuerdoDialog";
 import { PagoFlowDialog } from "@/components/PagoFlowDialog";
-import { Star, Clock, CheckCircle2, Sparkles, ShieldCheck, Briefcase, User } from "lucide-react";
+import { Star, Calendar, CheckCircle2, Sparkles, ShieldCheck, Briefcase, User } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -15,7 +15,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import type { Solicitud } from "@/types/solicitud";
-import { getOfertasMock, ordenarPorMejor, razonMejorOferta, type Oferta } from "@/lib/ofertas";
+import { ordenarPorMejor, razonMejorOferta, type Oferta } from "@/lib/ofertas";
+import { useOfertasStore } from "@/store/ofertasStore";
+import { TrabajadorPerfilDialog } from "@/components/TrabajadorPerfilDialog";
 
 const formatCOP = (n: number) =>
   new Intl.NumberFormat("es-CO", {
@@ -23,6 +25,13 @@ const formatCOP = (n: number) =>
     currency: "COP",
     maximumFractionDigits: 0,
   }).format(n);
+
+const formatFecha = (fecha: string) =>
+  new Date(`${fecha}T00:00:00`).toLocaleDateString("es-CO", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 
 interface Props {
   solicitud: Solicitud | null;
@@ -43,21 +52,25 @@ const OfertaCard = ({
   destacada,
   razon,
   onAceptar,
+  onVerPerfil,
 }: {
   oferta: Oferta;
   destacada?: boolean;
   razon?: string;
   onAceptar: () => void;
+  onVerPerfil: () => void;
 }) => (
   <div
     className={[
       "rounded-xl border p-4 transition-all",
-      destacada
-        ? "border-primary/60 bg-primary/5 shadow-elevated relative"
-        : "border-border bg-card hover:border-primary/30",
+      oferta.expirada
+        ? "border-border bg-muted/30 opacity-70"
+        : destacada
+          ? "border-primary/60 bg-primary/5 shadow-elevated relative"
+          : "border-border bg-card hover:border-primary/30",
     ].join(" ")}
   >
-    {destacada && (
+    {destacada && !oferta.expirada && (
       <div className="absolute -top-3 left-4">
         <Badge className="bg-primary text-primary-foreground gap-1 shadow-soft">
           <Sparkles size={12} />
@@ -78,6 +91,11 @@ const OfertaCard = ({
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <p className="font-semibold truncate">{oferta.nombre}</p>
           <Estrellas valor={oferta.calificacion} />
+          {oferta.expirada && (
+            <Badge variant="outline" className="text-xs text-muted-foreground border-muted-foreground/30">
+              Oferta expirada
+            </Badge>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-muted-foreground">
           {oferta.verificado && (
@@ -99,33 +117,34 @@ const OfertaCard = ({
       </div>
       <div className="rounded-lg bg-muted/40 p-3">
         <p className="text-[10px] uppercase tracking-wide text-muted-foreground flex items-center gap-1">
-          <Clock size={11} /> Tiempo estimado
+          <Calendar size={11} /> Inicia el
         </p>
         <p className="text-sm font-semibold mt-0.5">
-          {oferta.tiempoEstimadoDias} {oferta.tiempoEstimadoDias === 1 ? "día" : "días"}
+          {oferta.fechaInicio ? formatFecha(oferta.fechaInicio) : "A confirmar"}
         </p>
       </div>
     </div>
 
     <p className="text-sm text-muted-foreground mt-3 line-clamp-3">"{oferta.mensaje}"</p>
 
-    {destacada && razon && (
+    {destacada && !oferta.expirada && razon && (
       <p className="text-xs text-primary/90 font-medium mt-3 bg-primary/10 rounded-md px-2.5 py-1.5">
         ⭐ {razon}
       </p>
     )}
 
     <div className="flex flex-col sm:flex-row gap-2 mt-4">
-      <Button variant="outline" size="sm" className="sm:flex-1">
+      <Button variant="outline" size="sm" className="sm:flex-1" onClick={onVerPerfil}>
         Ver perfil
       </Button>
       <Button
         size="sm"
-        className={destacada ? "sm:flex-[2] shadow-elevated" : "sm:flex-1"}
+        className={destacada && !oferta.expirada ? "sm:flex-[2] shadow-elevated" : "sm:flex-1"}
         onClick={onAceptar}
+        disabled={oferta.expirada}
       >
         <CheckCircle2 size={14} />
-        Aceptar oferta
+        {oferta.expirada ? "Expirada" : "Aceptar oferta"}
       </Button>
     </div>
   </div>
@@ -133,14 +152,24 @@ const OfertaCard = ({
 
 export const OfertasDialog = ({ solicitud, open, onOpenChange, onAceptar }: Props) => {
   const { toast } = useToast();
+  const fetchBySolicitud = useOfertasStore((s) => s.fetchBySolicitud);
+  const aceptarOferta = useOfertasStore((s) => s.aceptar);
+  const ofertasBySolicitud = useOfertasStore((s) => s.bySolicitud);
   const [ofertaPendiente, setOfertaPendiente] = useState<Oferta | null>(null);
   const [ofertaPago, setOfertaPago] = useState<Oferta | null>(null);
+  const [perfilUsername, setPerfilUsername] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (solicitud && open) fetchBySolicitud(solicitud.id);
+  }, [solicitud, open, fetchBySolicitud]);
 
   const ofertasOrdenadas = useMemo(() => {
     if (!solicitud) return [];
-    const ofertas = getOfertasMock(solicitud.id, solicitud.presupuesto);
-    return ordenarPorMejor(ofertas, solicitud.presupuesto);
-  }, [solicitud]);
+    const ofertas = ofertasBySolicitud[solicitud.id] ?? [];
+    const vigentes = ofertas.filter((o) => !o.expirada);
+    const expiradas = ofertas.filter((o) => o.expirada);
+    return [...ordenarPorMejor(vigentes, solicitud.presupuesto), ...expiradas];
+  }, [solicitud, ofertasBySolicitud]);
 
   if (!solicitud) return null;
 
@@ -154,7 +183,8 @@ export const OfertasDialog = ({ solicitud, open, onOpenChange, onAceptar }: Prop
     setOfertaPago(oferta);
   };
 
-  const handlePagoCompletado = (solicitudId: string, oferta: Oferta) => {
+  const handlePagoCompletado = async (solicitudId: string, oferta: Oferta) => {
+    await aceptarOferta(oferta.id, solicitudId);
     toast({
       title: "Pago asegurado en escrow",
       description: `Aceptaste a ${oferta.nombre} por ${formatCOP(oferta.precio)}. El trabajo está en ejecución.`,
@@ -206,6 +236,7 @@ export const OfertasDialog = ({ solicitud, open, onOpenChange, onAceptar }: Prop
                     destacada={i === 0}
                     razon={i === 0 ? razon : undefined}
                     onAceptar={() => handleSeleccionar(o)}
+                    onVerPerfil={() => setPerfilUsername(o.trabajadorUsername)}
                   />
                 </div>
               ))
@@ -227,6 +258,11 @@ export const OfertasDialog = ({ solicitud, open, onOpenChange, onAceptar }: Prop
         onOpenChange={(v) => !v && setOfertaPago(null)}
         onPagoCompletado={handlePagoCompletado}
         onIrAlSeguimiento={handleCerrarPago}
+      />
+      <TrabajadorPerfilDialog
+        username={perfilUsername}
+        open={!!perfilUsername}
+        onOpenChange={(v) => !v && setPerfilUsername(null)}
       />
     </Dialog>
   );

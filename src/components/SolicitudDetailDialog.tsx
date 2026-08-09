@@ -15,6 +15,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { EstadoBadge } from "@/components/EstadoBadge";
 import { TIPOS_TRABAJO, type Solicitud } from "@/types/solicitud";
 import { useToast } from "@/hooks/use-toast";
+import { useOfertasStore } from "@/store/ofertasStore";
+import { ApiError } from "@/lib/apiClient";
 
 const tipoLabel = (tipo: string) =>
   TIPOS_TRABAJO.find((t) => t.value === tipo)?.label ?? tipo;
@@ -30,14 +32,19 @@ interface Props {
   solicitud: Solicitud | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onOfertaEnviada?: (solicitudId: string, monto: number, mensaje: string) => void;
+  onOfertaEnviada?: (solicitudId: string) => void;
 }
+
+const hoyISO = () => new Date().toISOString().slice(0, 10);
 
 export const SolicitudDetailDialog = ({ solicitud, open, onOpenChange, onOfertaEnviada }: Props) => {
   const { toast } = useToast();
+  const crearOferta = useOfertasStore((s) => s.crear);
   const [showOferta, setShowOferta] = useState(false);
   const [monto, setMonto] = useState("");
   const [mensaje, setMensaje] = useState("");
+  const [fechaInicio, setFechaInicio] = useState("");
+  const [enviando, setEnviando] = useState(false);
 
   if (!solicitud) return null;
 
@@ -45,10 +52,11 @@ export const SolicitudDetailDialog = ({ solicitud, open, onOpenChange, onOfertaE
     setShowOferta(false);
     setMonto("");
     setMensaje("");
+    setFechaInicio("");
     onOpenChange(false);
   };
 
-  const enviarOferta = () => {
+  const enviarOferta = async () => {
     const valor = Number(monto);
     if (!valor || valor <= 0) {
       toast({
@@ -66,12 +74,37 @@ export const SolicitudDetailDialog = ({ solicitud, open, onOpenChange, onOfertaE
       });
       return;
     }
-    toast({
-      title: "Oferta enviada",
-      description: `Tu propuesta de ${formatCOP(valor)} fue enviada al cliente.`,
-    });
-    onOfertaEnviada?.(solicitud.id, valor, mensaje.trim());
-    resetAndClose();
+    if (!fechaInicio || fechaInicio < hoyISO()) {
+      toast({
+        title: "Fecha de inicio inválida",
+        description: "Indica cuándo iniciarías la obra (no puede ser una fecha pasada).",
+        variant: "destructive",
+      });
+      return;
+    }
+    setEnviando(true);
+    try {
+      await crearOferta({
+        solicitudId: solicitud.id,
+        precio: valor,
+        mensaje: mensaje.trim(),
+        fechaInicio,
+      });
+      toast({
+        title: "Oferta enviada",
+        description: `Tu propuesta de ${formatCOP(valor)} fue enviada al cliente.`,
+      });
+      onOfertaEnviada?.(solicitud.id);
+      resetAndClose();
+    } catch (e) {
+      toast({
+        title: "No se pudo enviar la oferta",
+        description: e instanceof ApiError ? e.message : "Error de conexión con el servidor",
+        variant: "destructive",
+      });
+    } finally {
+      setEnviando(false);
+    }
   };
 
   return (
@@ -85,7 +118,9 @@ export const SolicitudDetailDialog = ({ solicitud, open, onOpenChange, onOfertaE
               </p>
               <DialogTitle className="text-xl mt-1">Detalle de la solicitud</DialogTitle>
               <DialogDescription className="mt-1">
-                Revisa la información completa antes de enviar tu oferta.
+                {solicitud.estado === "publicado"
+                  ? "Revisa la información completa antes de enviar tu oferta."
+                  : "Información completa de la solicitud."}
               </DialogDescription>
             </div>
             <EstadoBadge estado={solicitud.estado} />
@@ -172,6 +207,16 @@ export const SolicitudDetailDialog = ({ solicitud, open, onOpenChange, onOfertaE
                   />
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="fechaInicio">Fecha en que iniciarías la obra</Label>
+                  <Input
+                    id="fechaInicio"
+                    type="date"
+                    min={hoyISO()}
+                    value={fechaInicio}
+                    onChange={(e) => setFechaInicio(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="mensaje">Mensaje al cliente</Label>
                   <Textarea
                     id="mensaje"
@@ -196,9 +241,9 @@ export const SolicitudDetailDialog = ({ solicitud, open, onOpenChange, onOfertaE
               <Button variant="outline" onClick={() => setShowOferta(false)}>
                 Cancelar
               </Button>
-              <Button onClick={enviarOferta}>
+              <Button onClick={enviarOferta} disabled={enviando}>
                 <Send size={14} />
-                Enviar oferta
+                {enviando ? "Enviando..." : "Enviar oferta"}
               </Button>
             </>
           ) : (
@@ -206,10 +251,12 @@ export const SolicitudDetailDialog = ({ solicitud, open, onOpenChange, onOfertaE
               <Button variant="outline" onClick={resetAndClose}>
                 Cerrar
               </Button>
-              <Button onClick={() => setShowOferta(true)}>
-                <DollarSign size={14} />
-                Enviar oferta de valor
-              </Button>
+              {solicitud.estado === "publicado" && (
+                <Button onClick={() => setShowOferta(true)}>
+                  <DollarSign size={14} />
+                  Enviar oferta de valor
+                </Button>
+              )}
             </>
           )}
         </div>

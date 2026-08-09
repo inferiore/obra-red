@@ -21,7 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useAuth } from "@/context/AuthContext";
+import { useAuthStore } from "@/store/authStore";
 import { toast } from "sonner";
 
 const schema = z.object({
@@ -47,7 +47,8 @@ interface Props {
 }
 
 export const EditarPerfilDialog = ({ open, onOpenChange }: Props) => {
-  const { user, updateProfile } = useAuth();
+  const user = useAuthStore((s) => s.user);
+  const updateProfile = useAuthStore((s) => s.updateProfile);
   const [form, setForm] = useState({ name: "", email: "", telefono: "", direccion: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -78,10 +79,10 @@ export const EditarPerfilDialog = ({ open, onOpenChange }: Props) => {
     setConfirmOpen(true);
   };
 
-  const handleConfirmSave = () => {
+  const handleConfirmSave = async () => {
     const parsed = schema.safeParse(form);
     if (!parsed.success) return;
-    const res = updateProfile(parsed.data);
+    const res = await updateProfile(parsed.data);
     if (!res.ok) {
       toast.error(res.error ?? "No se pudo actualizar el perfil");
       setConfirmOpen(false);

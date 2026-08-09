@@ -360,9 +360,15 @@ export const PagoFlowDialog = ({
                     <span className="font-medium">{oferta.nombre}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Tiempo estimado</span>
+                    <span className="text-muted-foreground">Inicia el</span>
                     <span className="font-medium">
-                      {oferta.tiempoEstimadoDias} {oferta.tiempoEstimadoDias === 1 ? "día" : "días"}
+                      {oferta.fechaInicio
+                        ? new Date(`${oferta.fechaInicio}T00:00:00`).toLocaleDateString("es-CO", {
+                            day: "2-digit",
+                            month: "long",
+                            year: "numeric",
+                          })
+                        : "A confirmar"}
                     </span>
                   </div>
                 </div>

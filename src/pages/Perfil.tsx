@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import logo from "@/assets/obrared-logo.png";
 import {
@@ -32,8 +32,8 @@ import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { useAuth } from "@/context/AuthContext";
-import { useSolicitudes } from "@/context/SolicitudesContext";
+import { useAuthStore } from "@/store/authStore";
+import { useSolicitudesStore } from "@/store/solicitudesStore";
 import { EstadoBadge } from "@/components/EstadoBadge";
 import { TIPOS_TRABAJO, type Solicitud } from "@/types/solicitud";
 import { EditarPerfilDialog } from "@/components/EditarPerfilDialog";
@@ -141,12 +141,19 @@ const TrabajoMini = ({ s }: { s: Solicitud }) => (
 /* ---------- Page ---------- */
 
 const Perfil = () => {
-  const { user, logout } = useAuth();
-  const { solicitudes, porUsuario } = useSolicitudes();
+  const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
+  const solicitudes = useSolicitudesStore((s) => s.solicitudes);
+  const fetchAll = useSolicitudesStore((s) => s.fetchAll);
+  const porUsuario = useSolicitudesStore((s) => s.porUsuario);
   const navigate = useNavigate();
   const [notifEmail, setNotifEmail] = useState(true);
   const [notifPush, setNotifPush] = useState(true);
   const [editOpen, setEditOpen] = useState(false);
+
+  useEffect(() => {
+    fetchAll();
+  }, [fetchAll]);
 
   const isCliente = user?.role === "cliente";
   const isTrabajador = user?.role === "trabajador";
