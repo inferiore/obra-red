@@ -1,8 +1,6 @@
 services:
   backend:
-    build:
-      context: ./server
-      dockerfile: Dockerfile
+    image: ghcr.io/inferiore/obra-red-backend:latest
     restart: unless-stopped
     env_file:
       - ./server/.env.production
@@ -15,11 +13,7 @@ services:
       - "3001"
 
   frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        VITE_API_URL: /api
+    image: ghcr.io/inferiore/obra-red-frontend:latest
     restart: unless-stopped
     depends_on:
       - backend
