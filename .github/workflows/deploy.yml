@@ -96,11 +96,7 @@ jobs:
     name: Deploy a producción
     runs-on: ubuntu-latest
     needs: [build-and-push]
-    # Disparo manual únicamente (Actions → CI/CD → Run workflow) hasta que
-    # confirmemos que el flujo completo funciona bien. Para deployar
-    # automáticamente en cada push a main, cambiá esta condición a:
-    #   if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     steps:
       - name: Deploy por SSH
         env:
