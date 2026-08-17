@@ -24,9 +24,15 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { apiFetch, ApiError } from "@/lib/apiClient";
 import { useAuthStore } from "@/store/authStore";
 import { useCalificacionesStore } from "@/store/calificacionesStore";
+import type { Calificacion } from "@/lib/calificaciones";
 import { TIPOS_TRABAJO } from "@/types/solicitud";
 
 const tipoLabel = (tipo: string) => TIPOS_TRABAJO.find((t) => t.value === tipo)?.label ?? tipo;
+
+// Referencia estable: si el selector devolviera un `[]` nuevo en cada
+// render, useSyncExternalStore (por dentro de Zustand) entra en loop
+// infinito al no poder confirmar que el valor "no cambió".
+const EMPTY_CALIFICACIONES: Calificacion[] = [];
 
 const Estrellas = ({ valor }: { valor: number }) => (
   <span className="inline-flex items-center gap-0.5">
@@ -64,7 +70,7 @@ export const TrabajadorPerfilDialog = ({ username, open, onOpenChange }: Props) 
   const token = useAuthStore((s) => s.token);
   const fetchCalificaciones = useCalificacionesStore((s) => s.fetchByTrabajador);
   const calificaciones = useCalificacionesStore((s) =>
-    username ? s.byTrabajador[username] ?? [] : [],
+    username ? s.byTrabajador[username] ?? EMPTY_CALIFICACIONES : EMPTY_CALIFICACIONES,
   );
   const [perfil, setPerfil] = useState<TrabajadorPerfil | null>(null);
   const [loading, setLoading] = useState(false);
