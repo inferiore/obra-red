@@ -12,6 +12,8 @@ import { UsersModule } from './users/users.module';
 import { SolicitudesModule } from './solicitudes/solicitudes.module';
 import { OfertasModule } from './ofertas/ofertas.module';
 import { CalificacionesModule } from './calificaciones/calificaciones.module';
+import { UploadsModule } from './uploads/upload.module';
+import { File } from './files/files.entity';
 
 @Module({
   imports: [
@@ -19,7 +21,7 @@ import { CalificacionesModule } from './calificaciones/calificaciones.module';
     TypeOrmModule.forRoot({
       type: 'sqlite',
       database: process.env.DB_PATH ?? 'obrared.sqlite',
-      entities: [User, Solicitud, Oferta, Calificacion],
+      entities: [User, Solicitud, Oferta, Calificacion, File],
       migrations: ['dist/database/migrations/*.js'],
       // In-memory DB (e2e tests) has no migrations to run against, so build
       // its schema straight from the entities instead.
@@ -30,6 +32,7 @@ import { CalificacionesModule } from './calificaciones/calificaciones.module';
     SolicitudesModule,
     OfertasModule,
     CalificacionesModule,
+    UploadsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
