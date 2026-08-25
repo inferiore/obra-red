@@ -1,3 +1,5 @@
+import type { Oferta } from "@/lib/ofertas";
+
 export type UserRole = "cliente" | "trabajador" | "admin";
 
 export interface AuthUser {
@@ -67,6 +69,9 @@ export interface Solicitud {
   fotos: string[]; // data URLs
   estado: SolicitudEstado;
   trabajadorAsignado?: string;
+  // Sí vienen en el listado (GET /solicitudes) — el backend las embebe
+  // batcheadas para evitar que el frontend tenga que pedirlas una por una.
+  ofertas?: Oferta[];
   // No vienen en el listado (GET /solicitudes) por su peso — solo al pedir
   // el detalle de una solicitud puntual (GET /solicitudes/:id).
   evidenciaAntes?: string[];

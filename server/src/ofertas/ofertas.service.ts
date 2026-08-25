@@ -4,9 +4,10 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Not, Repository } from 'typeorm';
+import { DataSource, In, Not, Repository } from 'typeorm';
 import { Oferta } from './oferta.entity';
 import { Solicitud } from '../solicitudes/solicitud.entity';
+import { User } from '../users/user.entity';
 import { UsersService } from '../users/users.service';
 import { CreateOfertaDto } from './dto/create-oferta.dto';
 
@@ -56,26 +57,48 @@ export class OfertasService {
     const trabajadores = await this.usersService.findByUsernames(
       ofertas.map((o) => o.trabajadorUsername),
     );
-    return ofertas.map((o) => {
-      const trabajador = trabajadores.get(o.trabajadorUsername);
-      return {
-        id: o.id,
-        solicitudId: o.solicitudId,
-        trabajadorUsername: o.trabajadorUsername,
-        nombre: trabajador?.name ?? o.trabajadorUsername,
-        fotoUrl: fotoUrlFor(trabajador?.name ?? o.trabajadorUsername),
-        calificacion: trabajador?.calificacion ?? 5,
-        trabajosCompletados: trabajador?.trabajosCompletados ?? 0,
-        verificado: trabajador?.verificado ?? false,
-        precio: o.precio,
-        tiempoEstimadoDias: o.tiempoEstimadoDias ?? null,
-        fechaInicio: o.fechaInicio ?? null,
-        mensaje: o.mensaje,
-        estado: o.estado,
-        createdAt: o.createdAt,
-        expirada: estaExpirada(o.createdAt),
-      };
+    return ofertas.map((o) => this.enriquecer(o, trabajadores));
+  }
+
+  async findBySolicitudIds(
+    solicitudIds: string[],
+  ): Promise<Map<string, OfertaEnriquecida[]>> {
+    if (solicitudIds.length === 0) return new Map();
+    const ofertas = await this.ofertasRepo.find({
+      where: { solicitudId: In(solicitudIds) },
+      order: { createdAt: 'ASC' },
     });
+    const trabajadores = await this.usersService.findByUsernames(
+      ofertas.map((o) => o.trabajadorUsername),
+    );
+    const bySolicitud = new Map<string, OfertaEnriquecida[]>();
+    for (const o of ofertas) {
+      const lista = bySolicitud.get(o.solicitudId) ?? [];
+      lista.push(this.enriquecer(o, trabajadores));
+      bySolicitud.set(o.solicitudId, lista);
+    }
+    return bySolicitud;
+  }
+
+  private enriquecer(o: Oferta, trabajadores: Map<string, User>): OfertaEnriquecida {
+    const trabajador = trabajadores.get(o.trabajadorUsername);
+    return {
+      id: o.id,
+      solicitudId: o.solicitudId,
+      trabajadorUsername: o.trabajadorUsername,
+      nombre: trabajador?.name ?? o.trabajadorUsername,
+      fotoUrl: fotoUrlFor(trabajador?.name ?? o.trabajadorUsername),
+      calificacion: trabajador?.calificacion ?? 5,
+      trabajosCompletados: trabajador?.trabajosCompletados ?? 0,
+      verificado: trabajador?.verificado ?? false,
+      precio: o.precio,
+      tiempoEstimadoDias: o.tiempoEstimadoDias ?? null,
+      fechaInicio: o.fechaInicio ?? null,
+      mensaje: o.mensaje,
+      estado: o.estado,
+      createdAt: o.createdAt,
+      expirada: estaExpirada(o.createdAt),
+    };
   }
 
   async crear(dto: CreateOfertaDto, trabajadorUsername: string): Promise<Oferta> {

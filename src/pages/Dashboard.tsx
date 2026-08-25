@@ -28,7 +28,6 @@ import { RevisionTrabajoDialog } from "@/components/RevisionTrabajoDialog";
 import { ProgresoTrabajoDialog } from "@/components/ProgresoTrabajoDialog";
 import { EvidenciasUploadDialog } from "@/components/EvidenciasUploadDialog";
 import { CalificacionDialog } from "@/components/CalificacionDialog";
-import { useOfertasStore } from "@/store/ofertasStore";
 import { Badge } from "@/components/ui/badge";
 import logo from "@/assets/obrared-logo.png";
 import { useNavigate } from "react-router-dom";
@@ -181,8 +180,6 @@ const Dashboard = () => {
   const fetchAllSolicitudes = useSolicitudesStore((s) => s.fetchAll);
   const porUsuario = useSolicitudesStore((s) => s.porUsuario);
   const actualizarEstado = useSolicitudesStore((s) => s.actualizarEstado);
-  const ofertasBySolicitud = useOfertasStore((s) => s.bySolicitud);
-  const fetchOfertasBySolicitud = useOfertasStore((s) => s.fetchBySolicitud);
   const navigate = useNavigate();
   const { toast } = useToast();
   const [openForm, setOpenForm] = useState(false);
@@ -234,12 +231,12 @@ const Dashboard = () => {
   // ids de solicitudes a las que el trabajador actual ya envió una oferta
   const misOfertasSolicitudIds = useMemo(() => {
     if (!isTrabajador) return [];
-    return Object.entries(ofertasBySolicitud)
-      .filter(([, ofertas]) =>
-        ofertas.some((o) => o.trabajadorUsername === username)
+    return solicitudes
+      .filter((s) =>
+        s.ofertas?.some((o) => o.trabajadorUsername === username)
       )
-      .map(([id]) => id);
-  }, [isTrabajador, ofertasBySolicitud, username]);
+      .map((s) => s.id);
+  }, [isTrabajador, solicitudes, username]);
 
   const baseList = useMemo(() => {
     if (!user) return [];
@@ -262,18 +259,6 @@ const Dashboard = () => {
     username,
     misOfertasSolicitudIds,
   ]);
-
-  // Precarga las ofertas de las solicitudes visibles (para conteos y para saber
-  // si el trabajador actual ya ofertó en una publicada).
-  useEffect(() => {
-    solicitudes
-      .filter(
-        (s) =>
-          (s.estado === "publicado" || s.estado === "ejecucion") &&
-          !(s.id in ofertasBySolicitud)
-      )
-      .forEach((s) => fetchOfertasBySolicitud(s.id));
-  }, [solicitudes, ofertasBySolicitud, fetchOfertasBySolicitud]);
 
   const filtered = useMemo(() => {
     return baseList.filter((s) => {
@@ -531,7 +516,7 @@ const Dashboard = () => {
               const ofertasCount =
                 isCliente &&
                 (s.estado === "publicado" || s.estado === "ejecucion")
-                  ? ofertasBySolicitud[s.id]?.length
+                  ? s.ofertas?.length
                   : undefined;
               return (
                 <SolicitudCard

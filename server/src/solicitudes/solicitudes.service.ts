@@ -12,17 +12,21 @@ import { UpdateEstadoDto } from './dto/update-estado.dto';
 import { UpdateSolicitudDto } from './dto/update-solicitud.dto';
 import { SubirEvidenciasDto } from './dto/subir-evidencias.dto';
 import { SolicitarCorreccionDto } from './dto/solicitar-correccion.dto';
+import { OfertaEnriquecida, OfertasService } from '../ofertas/ofertas.service';
+
+export type SolicitudConOfertas = Solicitud & { ofertas: OfertaEnriquecida[] };
 
 @Injectable()
 export class SolicitudesService {
   constructor(
     @InjectRepository(Solicitud) private readonly repo: Repository<Solicitud>,
+    private readonly ofertasService: OfertasService,
   ) {}
 
-  findAll(): Promise<Solicitud[]> {
+  async findAll(): Promise<SolicitudConOfertas[]> {
     // El listado no trae las evidencias (pueden pesar varios MB en base64 por
     // solicitud) — esas solo se piden al abrir el detalle de una en concreto.
-    return this.repo.find({
+    const solicitudes = await this.repo.find({
       order: { createdAt: 'DESC' },
       select: [
         'id',
@@ -39,6 +43,13 @@ export class SolicitudesService {
         'createdAt',
       ],
     });
+    const ofertasPorSolicitud = await this.ofertasService.findBySolicitudIds(
+      solicitudes.map((s) => s.id),
+    );
+    return solicitudes.map((s) => ({
+      ...s,
+      ofertas: ofertasPorSolicitud.get(s.id) ?? [],
+    }));
   }
 
   async findOne(id: string): Promise<Solicitud> {
