@@ -56,8 +56,8 @@ export class SolicitudesService {
   }
 
   async findAll(): Promise<SolicitudConOfertas[]> {
-    // El listado no trae las evidencias (pueden pesar varios MB en base64 por
-    // solicitud) — esas solo se piden al abrir el detalle de una en concreto.
+    // El listado no trae evidencias ni fotos (pueden pesar varios MB en base64
+    // por solicitud) — esas solo se piden al abrir el detalle de una en concreto.
     const solicitudes = await this.repo.find({
       order: { createdAt: 'DESC' },
       select: [
@@ -68,7 +68,6 @@ export class SolicitudesService {
         'descripcion',
         'presupuesto',
         'ubicacion',
-        'fotos',
         'estado',
         'trabajadorAsignado',
         'correcciones',
