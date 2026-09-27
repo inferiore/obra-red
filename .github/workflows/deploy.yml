@@ -113,4 +113,8 @@ jobs:
           # Para que "docker compose pull" funcione, las imágenes en GHCR
           # deben estar en público (Packages → paquete → Change visibility)
           # la primera vez, o el servidor necesita su propio docker login.
-          ssh -i ~/.ssh/deploy_key "$USER@$HOST" "cd $DEPLOY_PATH && git pull origin main && docker compose pull && docker compose up -d"
+          # docker compose pull siempre trae ":latest" — la imagen anterior
+          # queda huérfana (dangling) en cada deploy y con el tiempo llena el
+          # disco de esta instancia chica (8GB). Se limpia después de levantar
+          # los contenedores nuevos, nunca antes, para no tocar nada en uso.
+          ssh -i ~/.ssh/deploy_key "$USER@$HOST" "cd $DEPLOY_PATH && git pull origin main && docker compose pull && docker compose up -d && docker system prune -a -f"
