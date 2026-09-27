@@ -1,3 +1,5 @@
+import type { Solicitud } from "@/types/solicitud";
+
 export type OfertaEstado = "pendiente" | "aceptada" | "rechazada";
 
 export interface Oferta {
@@ -42,3 +44,11 @@ export const razonMejorOferta = (o: Oferta, presupuesto: number): string => {
   if (partes.length === 0) return "Mejor balance entre precio, calidad y tiempo";
   return partes.join(", ").replace(/^./, (c) => c.toUpperCase());
 };
+
+// Un trabajador solo puede tener una oferta pendiente a la vez sobre la misma
+// solicitud; una oferta rechazada no bloquea reofertar (ver
+// specs/2026-09-10-limite-oferta-por-trabajador.md).
+export const tieneOfertaPendiente = (solicitud: Solicitud, username?: string): boolean =>
+  !!solicitud.ofertas?.some(
+    (o) => o.trabajadorUsername === username && o.estado === "pendiente",
+  );

@@ -20,6 +20,8 @@ interface SolicitudesState {
       | "evidenciaAntes"
       | "evidenciaDurante"
       | "evidenciaDespues"
+      | "correcciones"
+      | "correccionesCount"
     > & {
       estado?: SolicitudEstado;
     }
@@ -39,13 +41,31 @@ interface SolicitudesState {
       | "evidenciaAntes"
       | "evidenciaDurante"
       | "evidenciaDespues"
+      | "correcciones"
+      | "correccionesCount"
     >
   ) => Promise<Solicitud | null>;
   subirEvidencias: (
     id: string,
-    data: { antes: string[]; durante: string[]; despues: string[]; nota?: string }
+    data: {
+      antes: string[];
+      durante: string[];
+      despues: string[];
+      nota?: string;
+    }
   ) => Promise<Solicitud>;
+  subirEvidenciaDisputa: (id: string, fotos: string[]) => Promise<void>;
   solicitarCorreccion: (id: string, comentario: string) => Promise<Solicitud>;
+  abrirDisputa: (id: string, comentario: string) => Promise<Solicitud>;
+  resolverDisputa: (
+    id: string,
+    estado: "ejecucion" | "finalizado"
+  ) => Promise<Solicitud>;
+  adjuntarFotos: (
+    objectId: string,
+    object: string,
+    file: File[]
+  ) => Promise<string[]>;
 }
 
 const authToken = () => useAuthStore.getState().token;
@@ -70,9 +90,14 @@ export const useSolicitudesStore = create<SolicitudesState>()((set, get) => ({
     const actualizada = await apiFetch<Solicitud>(`/solicitudes/${id}`, {
       token: authToken(),
     });
-    set((state) => ({
-      solicitudes: state.solicitudes.map((s) => (s.id === id ? actualizada : s)),
-    }));
+    set((state) => {
+      const existe = state.solicitudes.some((s) => s.id === id);
+      return {
+        solicitudes: existe
+          ? state.solicitudes.map((s) => (s.id === id ? actualizada : s))
+          : [...state.solicitudes, actualizada],
+      };
+    });
     return actualizada;
   },
 
@@ -126,26 +151,98 @@ export const useSolicitudesStore = create<SolicitudesState>()((set, get) => ({
   },
 
   subirEvidencias: async (id, data) => {
-    const actualizada = await apiFetch<Solicitud>(`/solicitudes/${id}/evidencias`, {
-      method: "PATCH",
-      body: data,
-      token: authToken(),
-    });
+    const actualizada = await apiFetch<Solicitud>(
+      `/solicitudes/${id}/evidencias`,
+      {
+        method: "PATCH",
+        body: data,
+        token: authToken(),
+      }
+    );
     set((state) => ({
-      solicitudes: state.solicitudes.map((s) => (s.id === id ? actualizada : s)),
+      solicitudes: state.solicitudes.map((s) =>
+        s.id === id ? actualizada : s
+      ),
     }));
     return actualizada;
   },
 
-  solicitarCorreccion: async (id, comentario) => {
-    const actualizada = await apiFetch<Solicitud>(`/solicitudes/${id}/solicitar-correccion`, {
-      method: "PATCH",
-      body: { comentario },
-      token: authToken(),
-    });
+  subirEvidenciaDisputa: async (id, fotos) => {
+    const actualizada = await apiFetch<Solicitud>(
+      `/solicitudes/${id}/evidencia-disputa`,
+      {
+        method: "PATCH",
+        body: { fotos },
+        token: authToken(),
+      }
+    );
     set((state) => ({
-      solicitudes: state.solicitudes.map((s) => (s.id === id ? actualizada : s)),
+      solicitudes: state.solicitudes.map((s) =>
+        s.id === id ? actualizada : s
+      ),
+    }));
+  },
+
+  solicitarCorreccion: async (id, comentario) => {
+    const actualizada = await apiFetch<Solicitud>(
+      `/solicitudes/${id}/solicitar-correccion`,
+      {
+        method: "PATCH",
+        body: { comentario },
+        token: authToken(),
+      }
+    );
+    set((state) => ({
+      solicitudes: state.solicitudes.map((s) =>
+        s.id === id ? actualizada : s
+      ),
     }));
     return actualizada;
+  },
+
+  abrirDisputa: async (id, comentario) => {
+    const actualizada = await apiFetch<Solicitud>(
+      `/solicitudes/${id}/abrir-disputa`,
+      {
+        method: "PATCH",
+        body: { comentario },
+        token: authToken(),
+      }
+    );
+    set((state) => ({
+      solicitudes: state.solicitudes.map((s) =>
+        s.id === id ? actualizada : s
+      ),
+    }));
+    return actualizada;
+  },
+  resolverDisputa: async (id, estado) => {
+    const actualizada = await apiFetch<Solicitud>(
+      `/solicitudes/${id}/resolver-disputa`,
+      {
+        method: "PATCH",
+        body: { estado },
+        token: authToken(),
+      }
+    );
+    set((state) => ({
+      solicitudes: state.solicitudes.map((s) =>
+        s.id === id ? actualizada : s
+      ),
+    }));
+    return actualizada;
+  },
+  adjuntarFotos: async (objectId, object, files) => {
+    const formData = new FormData();
+    formData.append("objectId", objectId);
+    formData.append("object", object);
+    files.forEach((file) => formData.append("files", file));
+
+    const { path } = await apiFetch<{ path: string[] }>(`/files`, {
+      method: "POST",
+      body: formData,
+      token: authToken(),
+    });
+    return path;
   },
 }));

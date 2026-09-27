@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { DollarSign, MapPin, User, Calendar, Send, MessageSquare } from "lucide-react";
+import { DollarSign, MapPin, User, Calendar, Send, MessageSquare, Info } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -12,11 +12,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { EstadoBadge } from "@/components/EstadoBadge";
 import { TIPOS_TRABAJO, type Solicitud } from "@/types/solicitud";
 import { useToast } from "@/hooks/use-toast";
 import { useOfertasStore } from "@/store/ofertasStore";
-import { ApiError } from "@/lib/apiClient";
+import { useAuthStore } from "@/store/authStore";
+import { ApiError, resolveFileUrl } from "@/lib/apiClient";
+import { tieneOfertaPendiente } from "@/lib/ofertas";
 
 const tipoLabel = (tipo: string) =>
   TIPOS_TRABAJO.find((t) => t.value === tipo)?.label ?? tipo;
@@ -40,6 +43,7 @@ const hoyISO = () => new Date().toISOString().slice(0, 10);
 export const SolicitudDetailDialog = ({ solicitud, open, onOpenChange, onOfertaEnviada }: Props) => {
   const { toast } = useToast();
   const crearOferta = useOfertasStore((s) => s.crear);
+  const username = useAuthStore((s) => s.user?.username);
   const [showOferta, setShowOferta] = useState(false);
   const [monto, setMonto] = useState("");
   const [mensaje, setMensaje] = useState("");
@@ -47,6 +51,8 @@ export const SolicitudDetailDialog = ({ solicitud, open, onOpenChange, onOfertaE
   const [enviando, setEnviando] = useState(false);
 
   if (!solicitud) return null;
+
+  const yaTieneOfertaPendiente = tieneOfertaPendiente(solicitud, username);
 
   const resetAndClose = () => {
     setShowOferta(false);
@@ -180,13 +186,19 @@ export const SolicitudDetailDialog = ({ solicitud, open, onOpenChange, onOfertaE
                   {solicitud.fotos.map((src, i) => (
                     <img
                       key={i}
-                      src={src}
+                      src={resolveFileUrl(src)}
                       alt={`foto-${i}`}
                       className="w-full h-24 object-cover rounded-md border"
                     />
                   ))}
                 </div>
               </section>
+            )}
+
+            {!showOferta && yaTieneOfertaPendiente && solicitud.estado === "publicado" && (
+              <p className="text-sm text-muted-foreground">
+                Ya tienes una oferta pendiente en esta solicitud.
+              </p>
             )}
 
             {showOferta && (
@@ -217,7 +229,23 @@ export const SolicitudDetailDialog = ({ solicitud, open, onOpenChange, onOfertaE
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="mensaje">Mensaje al cliente</Label>
+                  <div className="flex items-center gap-1.5">
+                    <Label htmlFor="mensaje">Mensaje al cliente</Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          className="text-muted-foreground hover:text-foreground"
+                          aria-label="Ayuda sobre el mensaje al cliente"
+                        >
+                          <Info size={13} />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        Especifica claramente si el precio incluye materiales o solo mano de obra.
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
                   <Textarea
                     id="mensaje"
                     placeholder="Cuéntale tu experiencia, materiales incluidos, tiempo estimado..."
@@ -251,7 +279,7 @@ export const SolicitudDetailDialog = ({ solicitud, open, onOpenChange, onOfertaE
               <Button variant="outline" onClick={resetAndClose}>
                 Cerrar
               </Button>
-              {solicitud.estado === "publicado" && (
+              {solicitud.estado === "publicado" && !yaTieneOfertaPendiente && (
                 <Button onClick={() => setShowOferta(true)}>
                   <DollarSign size={14} />
                   Enviar oferta de valor

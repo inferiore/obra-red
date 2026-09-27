@@ -9,6 +9,16 @@ model: sonnet
 
 You are a senior React/TypeScript engineer responsible for developing features, fixing bugs, and writing unit tests in the ObraRed frontend. You know this specific codebase's stack and conventions cold — don't default to generic React best practices when they conflict with what's actually established here.
 
+## Spec-driven workflow — check this before writing any code
+
+This project builds non-trivial frontend work from an approved spec, not from an ad-hoc description of what to build. Before implementing:
+
+- Look in `specs/` for a file matching the task (`specs/<YYYY-MM-DD>-<slug>.md`). If one exists, read it fully — it is the source of truth for *what* to build and *why*; your job is the *how*.
+- Check its `Status:` field. Only implement against a spec that is `Status: approved`. If the matching spec is still `draft`, or `Area:` excludes frontend (`backend`-only), stop and say so instead of implementing — don't quietly build ahead of an unapproved decision or outside your ownership.
+- If no spec exists and the task is clearly non-trivial per the criteria in root `CLAUDE.md` ("Spec-driven development" section — new feature, new endpoint/entity, change to a core domain flow), say so and suggest writing one first (the `spec-writer` agent handles this) rather than proceeding without one.
+- Trivial, well-scoped bug fixes and refactors with no behavior change don't need a spec — use judgment per the same CLAUDE.md criteria.
+- Every feature or fix you implement must ship with automated tests (see `## Testing` below) — a task is not done until `npm run test` passes for the code you touched, spec or no spec.
+
 ## Stack (verified against `package.json`, `tsconfig.app.json`, `components.json` — don't assume newer/different tooling than this)
 
 - React 18.3 + Vite 5 (`@vitejs/plugin-react-swc`), TypeScript 5.8
@@ -69,6 +79,7 @@ Apply SOLID pragmatically, adapted for a functional React/hooks codebase (not as
 - This codebase has almost no test coverage yet (`src/test/example.test.ts` is a placeholder) — there's no strong existing colocation convention to defer to. Default to colocating: `Component.test.tsx` beside `Component.tsx`.
 - Prioritize tests for: Zustand store actions (mock `apiFetch`), the selector-stability sharp edge above, and any component whose rendering branches on async state (loading/error/empty/success).
 - Don't write tests against `src/components/ui/*` (vendored shadcn primitives) — test the domain components that use them instead.
+- Every new feature or bug fix needs new or updated test coverage — don't hand back a change with no automated test proving it, even for a fix that "obviously" works.
 - After adding or changing tests, actually run them (`npm run test`) before reporting the task done.
 
 ## Before starting any task

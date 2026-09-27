@@ -9,6 +9,7 @@ import {
   Building2,
   ArrowRight,
   Sparkles,
+  IdCard,
 } from "lucide-react";
 import {
   Dialog,
@@ -45,6 +46,7 @@ interface Props {
   onOpenChange: (v: boolean) => void;
   onPagoCompletado: (solicitudId: string, oferta: Oferta) => void;
   onIrAlSeguimiento?: () => void;
+  onVerCarnet?: () => void;
 }
 
 type Metodo = "tarjeta" | "pse" | "nequi";
@@ -62,6 +64,7 @@ export const PagoFlowDialog = ({
   onOpenChange,
   onPagoCompletado,
   onIrAlSeguimiento,
+  onVerCarnet,
 }: Props) => {
   const [step, setStep] = useState<"pago" | "procesando" | "exito">("pago");
   const [metodo, setMetodo] = useState<Metodo>("tarjeta");
@@ -386,7 +389,13 @@ export const PagoFlowDialog = ({
               </div>
             </ScrollArea>
 
-            <div className="border-t bg-background/95 backdrop-blur px-5 sm:px-6 py-4 shrink-0">
+            <div className="border-t bg-background/95 backdrop-blur px-5 sm:px-6 py-4 shrink-0 space-y-2">
+              {onVerCarnet && (
+                <Button variant="outline" className="w-full" onClick={onVerCarnet}>
+                  <IdCard size={16} />
+                  Ver carnet del trabajador
+                </Button>
+              )}
               <Button
                 className="w-full bg-primary hover:bg-primary/90 shadow-elevated"
                 onClick={handleSeguimiento}

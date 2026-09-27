@@ -3,11 +3,16 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Oferta } from './oferta.entity';
 import { Solicitud } from '../solicitudes/solicitud.entity';
 import { UsersModule } from '../users/users.module';
+import { NotificacionesModule } from '../notificaciones/notificaciones.module';
 import { OfertasService } from './ofertas.service';
 import { OfertasController } from './ofertas.controller';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Oferta, Solicitud]), UsersModule],
+  imports: [
+    TypeOrmModule.forFeature([Oferta, Solicitud]),
+    UsersModule,
+    NotificacionesModule,
+  ],
   controllers: [OfertasController],
   providers: [OfertasService],
   exports: [OfertasService],

@@ -13,6 +13,8 @@ import NotFound from "./pages/NotFound.tsx";
 import Perfil from "./pages/Perfil.tsx";
 import Terminos from "./pages/Terminos.tsx";
 import Privacidad from "./pages/Privacidad.tsx";
+import AdminSolicitudes from "./pages/AdminSolicitudes.tsx";
+import AdminSolicitudDetail from "./pages/AdminSolicitudDetail.tsx";
 
 const queryClient = new QueryClient();
 
@@ -45,6 +47,22 @@ const App = () => (
           />
           <Route path="/terminos" element={<Terminos />} />
           <Route path="/privacidad" element={<Privacidad />} />
+          <Route
+            path="/admin/solicitudes"
+            element={
+              <ProtectedRoute allow={["admin"]}>
+                <AdminSolicitudes />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/solicitudes/:id"
+            element={
+              <ProtectedRoute allow={["admin"]}>
+                <AdminSolicitudDetail />
+              </ProtectedRoute>
+            }
+          />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -1,6 +1,7 @@
 import {
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -9,6 +10,7 @@ import { Oferta } from './oferta.entity';
 import { Solicitud } from '../solicitudes/solicitud.entity';
 import { User } from '../users/user.entity';
 import { UsersService } from '../users/users.service';
+import { NotificacionesService } from '../notificaciones/notificaciones.service';
 import { CreateOfertaDto } from './dto/create-oferta.dto';
 
 export interface OfertaEnriquecida {
@@ -42,12 +44,40 @@ const estaExpirada = (createdAt: Date): boolean => {
 
 @Injectable()
 export class OfertasService {
+  private readonly logger = new Logger(OfertasService.name);
+
   constructor(
     @InjectRepository(Oferta) private readonly ofertasRepo: Repository<Oferta>,
     @InjectRepository(Solicitud) private readonly solicitudesRepo: Repository<Solicitud>,
     private readonly usersService: UsersService,
     private readonly dataSource: DataSource,
+    private readonly notificacionesService: NotificacionesService,
   ) {}
+
+  private async notificar(
+    userUsername: string,
+    tipo: string,
+    mensaje: string,
+    solicitudId?: string,
+    object?: string,
+    objectId?: string,
+  ): Promise<void> {
+    try {
+      await this.notificacionesService.crear(
+        userUsername,
+        tipo,
+        mensaje,
+        solicitudId,
+        object,
+        objectId,
+      );
+    } catch (err) {
+      this.logger.error(
+        `No se pudo crear la notificación '${tipo}' para ${userUsername}`,
+        err instanceof Error ? err.stack : err,
+      );
+    }
+  }
 
   async findBySolicitud(solicitudId: string): Promise<OfertaEnriquecida[]> {
     const ofertas = await this.ofertasRepo.find({
@@ -107,12 +137,29 @@ export class OfertasService {
     if (solicitud.estado !== 'publicado') {
       throw new ConflictException('Esta solicitud ya no está disponible para recibir ofertas');
     }
+    const yaOfertoPendiente = await this.ofertasRepo.findOne({
+      where: { solicitudId: dto.solicitudId, trabajadorUsername, estado: 'pendiente' },
+    });
+    if (yaOfertoPendiente) {
+      throw new ConflictException('Ya tienes una oferta pendiente en esta solicitud');
+    }
     const oferta = this.ofertasRepo.create({ ...dto, trabajadorUsername });
-    return this.ofertasRepo.save(oferta);
+    const guardada = await this.ofertasRepo.save(oferta);
+
+    await this.notificar(
+      solicitud.clienteUsername,
+      'nueva_oferta',
+      'Recibiste una nueva oferta en tu solicitud',
+      dto.solicitudId,
+      'oferta',
+      guardada.id,
+    );
+
+    return guardada;
   }
 
   async aceptar(ofertaId: string): Promise<Solicitud> {
-    return this.dataSource.transaction(async (manager) => {
+    const solicitud = await this.dataSource.transaction(async (manager) => {
       const oferta = await manager.findOne(Oferta, { where: { id: ofertaId } });
       if (!oferta) throw new NotFoundException('Oferta no encontrada');
       if (estaExpirada(oferta.createdAt)) {
@@ -135,5 +182,24 @@ export class OfertasService {
       solicitud.trabajadorAsignado = oferta.trabajadorUsername;
       return manager.save(solicitud);
     });
+
+    await this.notificar(
+      solicitud.trabajadorAsignado as string,
+      'oferta_aceptada',
+      'Tu oferta fue aceptada',
+      solicitud.id,
+      'oferta',
+      ofertaId,
+    );
+    await this.notificar(
+      solicitud.clienteUsername,
+      'solicitud_en_ejecucion',
+      'Tu solicitud pasó a ejecución',
+      solicitud.id,
+      'solicitud',
+      solicitud.id,
+    );
+
+    return solicitud;
   }
 }

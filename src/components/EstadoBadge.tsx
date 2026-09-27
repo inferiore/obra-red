@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import { ESTADO_LABELS, type SolicitudEstado } from "@/types/solicitud";
-import { AlertTriangle, CheckCircle2, Circle, Eye, FileEdit, Loader2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Circle, Eye, FileEdit, Flag, Loader2 } from "lucide-react";
 
 const STYLES: Record<SolicitudEstado, string> = {
   borrador: "bg-muted text-muted-foreground border-border",
@@ -8,6 +8,7 @@ const STYLES: Record<SolicitudEstado, string> = {
   ejecucion: "bg-warning/10 text-warning border-warning/30",
   revision: "bg-info/10 text-info border-info/30",
   corrigiendo: "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/30",
+  disputa: "bg-destructive/10 text-destructive border-destructive/30",
   finalizado: "bg-success/10 text-success border-success/30",
 };
 
@@ -17,6 +18,7 @@ const ICONS: Record<SolicitudEstado, typeof Circle> = {
   ejecucion: Loader2,
   revision: Eye,
   corrigiendo: AlertTriangle,
+  disputa: Flag,
   finalizado: CheckCircle2,
 };
 

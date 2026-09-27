@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Camera, X, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { ApiError } from "@/lib/apiClient";
 import { useAuthStore } from "@/store/authStore";
 import { useSolicitudesStore } from "@/store/solicitudesStore";
 import {
@@ -32,6 +33,7 @@ export const SolicitudForm = ({ onClose, solicitud }: Props) => {
   const user = useAuthStore((s) => s.user);
   const crear = useSolicitudesStore((s) => s.crear);
   const actualizar = useSolicitudesStore((s) => s.actualizar);
+  const adjuntar = useSolicitudesStore((s) => s.adjuntarFotos);
 
   const { toast } = useToast();
 
@@ -39,30 +41,29 @@ export const SolicitudForm = ({ onClose, solicitud }: Props) => {
   const [descripcion, setDescripcion] = useState(solicitud?.descripcion ?? "");
   const [presupuesto, setPresupuesto] = useState(solicitud?.presupuesto ?? "");
   const [ubicacion, setUbicacion] = useState(solicitud?.ubicacion ?? "");
-  const [fotos, setFotos] = useState<string[]>(
-    solicitud?.id ? solicitud.fotos : []
+  const [fotos, setFotos] = useState<File[]>([]);
+  const [submitting, setSubmitting] = useState<SolicitudEstado | null>(null);
+
+  const fotoPreviews = useMemo(
+    () => fotos.map((f) => URL.createObjectURL(f)),
+    [fotos],
   );
+  useEffect(() => {
+    return () => fotoPreviews.forEach((url) => URL.revokeObjectURL(url));
+  }, [fotoPreviews]);
 
   const handleFotos = (files: FileList | null) => {
     if (!files) return;
     const remaining = MAX_FOTOS - fotos.length;
-    const arr = Array.from(files).slice(0, remaining);
-    arr.forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (typeof reader.result === "string") {
-          setFotos((prev) => [...prev, reader.result as string]);
-        }
-      };
-      reader.readAsDataURL(file);
-    });
+    const filesArray = Array.from(files);
+    setFotos((prevFiles) => [...prevFiles, ...filesArray]);
   };
 
   const removeFoto = (idx: number) =>
     setFotos((prev) => prev.filter((_, i) => i !== idx));
 
   const submit = async (estado: SolicitudEstado) => {
-    if (!user) return;
+    if (submitting || !user) return;
     if (!tipo || !descripcion.trim() || !presupuesto) {
       toast({
         title: "Faltan datos",
@@ -85,36 +86,63 @@ export const SolicitudForm = ({ onClose, solicitud }: Props) => {
       toast({ title: "Presupuesto inválido", variant: "destructive" });
       return;
     }
-    if (!solicitud?.id) {
-      await crear({
-        tipo: tipo as TipoTrabajo,
-        descripcion: descripcion.trim(),
-        presupuesto: presupuestoNum,
-        ubicacion: ubicacion.trim(),
-        fotos,
-        estado,
-      });
-    } else {
-      await actualizar({
-        id: solicitud.id,
-        tipo: tipo as TipoTrabajo,
-        descripcion: descripcion.trim(),
-        presupuesto: presupuestoNum,
-        ubicacion: ubicacion.trim(),
-        fotos,
-        estado: estado,
-      });
-    }
+    setSubmitting(estado);
+    try {
+      if (!solicitud?.id) {
+        const solicitudResponse = await crear({
+          tipo: tipo as TipoTrabajo,
+          descripcion: descripcion.trim(),
+          presupuesto: presupuestoNum,
+          ubicacion: ubicacion.trim(),
+          fotos: [],
+          estado,
+        });
+        if (solicitudResponse && fotos.length > 0) {
+          const fotosUrls = await adjuntar(
+            solicitudResponse.id,
+            "solicitud",
+            fotos,
+          );
+          await actualizar({
+            id: solicitudResponse.id,
+            tipo: tipo as TipoTrabajo,
+            descripcion: descripcion.trim(),
+            presupuesto: presupuestoNum,
+            ubicacion: ubicacion.trim(),
+            fotos: fotosUrls,
+            estado,
+          });
+        }
+      } else {
+        await actualizar({
+          id: solicitud.id,
+          tipo: tipo as TipoTrabajo,
+          descripcion: descripcion.trim(),
+          presupuesto: presupuestoNum,
+          ubicacion: ubicacion.trim(),
+          fotos: [],
+          estado: estado,
+        });
+      }
 
-    toast({
-      title:
-        estado === "publicado" ? "Solicitud publicada" : "Borrador guardado",
-      description:
-        estado === "publicado"
-          ? "Los trabajadores ya pueden ver tu solicitud."
-          : "Puedes editarla y publicarla luego.",
-    });
-    onClose();
+      toast({
+        title:
+          estado === "publicado" ? "Solicitud publicada" : "Borrador guardado",
+        description:
+          estado === "publicado"
+            ? "Los trabajadores ya pueden ver tu solicitud."
+            : "Puedes editarla y publicarla luego.",
+      });
+      onClose();
+    } catch (e) {
+      toast({
+        title: "No se pudo guardar la solicitud",
+        description: e instanceof ApiError ? e.message : "Intenta de nuevo.",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(null);
+    }
   };
 
   return (
@@ -192,7 +220,7 @@ export const SolicitudForm = ({ onClose, solicitud }: Props) => {
           Fotos del inicio del trabajo ({fotos.length}/{MAX_FOTOS})
         </Label>
         <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-          {fotos.map((src, i) => (
+          {fotoPreviews.map((src, i) => (
             <div
               key={i}
               className="relative group aspect-square rounded-lg overflow-hidden border border-border"
@@ -234,15 +262,17 @@ export const SolicitudForm = ({ onClose, solicitud }: Props) => {
           variant="outline"
           className="flex-1 h-11"
           onClick={() => submit("borrador")}
+          disabled={submitting !== null}
         >
-          Guardar borrador
+          {submitting === "borrador" ? "Guardando..." : "Guardar borrador"}
         </Button>
         <Button
           type="button"
           className="flex-1 h-11"
           onClick={() => submit("publicado")}
+          disabled={submitting !== null}
         >
-          Publicar solicitud
+          {submitting === "publicado" ? "Publicando..." : "Publicar solicitud"}
         </Button>
       </div>
     </div>

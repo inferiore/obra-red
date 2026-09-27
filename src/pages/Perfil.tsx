@@ -37,6 +37,9 @@ import { useSolicitudesStore } from "@/store/solicitudesStore";
 import { EstadoBadge } from "@/components/EstadoBadge";
 import { TIPOS_TRABAJO, type Solicitud } from "@/types/solicitud";
 import { EditarPerfilDialog } from "@/components/EditarPerfilDialog";
+import { CambiarContrasenaDialog } from "@/components/CambiarContrasenaDialog";
+import { NotificacionesMenu } from "@/components/NotificacionesMenu";
+import { MensajesMenu } from "@/components/MensajesMenu";
 
 const formatCOP = (n: number) =>
   new Intl.NumberFormat("es-CO", {
@@ -150,6 +153,7 @@ const Perfil = () => {
   const [notifEmail, setNotifEmail] = useState(true);
   const [notifPush, setNotifPush] = useState(true);
   const [editOpen, setEditOpen] = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
 
   useEffect(() => {
     fetchAll();
@@ -231,10 +235,14 @@ const Perfil = () => {
               Obra<span className="text-primary">Red</span>
             </span>
           </button>
-          <Button variant="ghost" size="sm" onClick={handleLogout}>
-            <LogOut size={16} />
-            <span className="hidden sm:inline">Salir</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <NotificacionesMenu />
+            <MensajesMenu />
+            <Button variant="ghost" size="sm" onClick={handleLogout}>
+              <LogOut size={16} />
+              <span className="hidden sm:inline">Salir</span>
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -668,7 +676,12 @@ const Perfil = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button variant="outline" size="sm" className="w-full">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => setEditOpen(true)}
+                  >
                     Editar información personal
                   </Button>
                 </CardContent>
@@ -712,7 +725,12 @@ const Perfil = () => {
                   <CardDescription>Cambia tu contraseña periódicamente.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button variant="outline" size="sm" className="w-full">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => setPasswordOpen(true)}
+                  >
                     Cambiar contraseña
                   </Button>
                 </CardContent>
@@ -741,6 +759,7 @@ const Perfil = () => {
         </Tabs>
       </main>
       <EditarPerfilDialog open={editOpen} onOpenChange={setEditOpen} />
+      <CambiarContrasenaDialog open={passwordOpen} onOpenChange={setPasswordOpen} />
     </div>
   );
 };

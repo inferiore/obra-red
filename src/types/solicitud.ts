@@ -31,6 +31,7 @@ export type SolicitudEstado =
   | "ejecucion"
   | "revision"
   | "corrigiendo"
+  | "disputa"
   | "finalizado";
 
 export type TipoTrabajo =
@@ -78,7 +79,12 @@ export interface Solicitud {
   evidenciaDurante?: string[];
   evidenciaDespues?: string[];
   evidenciaNota?: string;
-  correccionComentario?: string;
+  // Evidencia subida por cualquiera de las dos partes mientras la solicitud
+  // está en disputa. A diferencia de las otras fases, cada elemento lleva
+  // atribución (quién la subió y cuándo) porque ambas partes pueden subir.
+  evidenciaDisputa?: { url: string; autorUsername: string; createdAt: string }[];
+  correcciones: string[];
+  correccionesCount: number;
   createdAt: string;
 }
 
@@ -88,5 +94,6 @@ export const ESTADO_LABELS: Record<SolicitudEstado, string> = {
   ejecucion: "En ejecución",
   revision: "En revisión",
   corrigiendo: "Corrigiendo",
+  disputa: "En disputa",
   finalizado: "Finalizado",
 };

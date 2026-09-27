@@ -79,6 +79,8 @@ export const RevisionTrabajoDialog = ({ solicitud, open, onOpenChange, onAprobar
 
   if (!solicitud) return null;
 
+  const seAbriraDisputa = (solicitud.correccionesCount ?? 0) >= 1;
+
   const evidencias = [
     { ...ETAPAS[0], fotos: solicitud.evidenciaAntes ?? [] },
     { ...ETAPAS[1], fotos: solicitud.evidenciaDurante ?? [] },
@@ -114,10 +116,18 @@ export const RevisionTrabajoDialog = ({ solicitud, open, onOpenChange, onAprobar
     setEnviandoCorreccion(true);
     try {
       await solicitarCorreccion(solicitud.id, comentario.trim());
-      toast({
-        title: "Solicitud de corrección enviada",
-        description: "El trabajador recibirá tu comentario y podrá ajustar el trabajo.",
-      });
+      toast(
+        seAbriraDisputa
+          ? {
+              title: "Disputa abierta",
+              description:
+                "Ya habías solicitado una corrección antes, así que esta solicitud pasó a disputa. Nuestro equipo intervendrá.",
+            }
+          : {
+              title: "Solicitud de corrección enviada",
+              description: "El trabajador recibirá tu comentario y podrá ajustar el trabajo.",
+            }
+      );
       reset();
       onOpenChange(false);
     } catch (e) {
@@ -292,14 +302,34 @@ export const RevisionTrabajoDialog = ({ solicitud, open, onOpenChange, onAprobar
 
               {/* Corrección (textarea condicional) */}
               {showCorreccion && (
-                <section className="rounded-lg border border-orange-200 dark:border-orange-500/30 bg-orange-50/60 dark:bg-orange-500/5 p-4 space-y-3">
+                <section
+                  className={
+                    seAbriraDisputa
+                      ? "rounded-lg border border-red-300 dark:border-red-500/40 bg-red-50/60 dark:bg-red-500/5 p-4 space-y-3"
+                      : "rounded-lg border border-orange-200 dark:border-orange-500/30 bg-orange-50/60 dark:bg-orange-500/5 p-4 space-y-3"
+                  }
+                >
                   <div>
-                    <h3 className="font-semibold text-orange-900 dark:text-orange-200 flex items-center gap-2">
-                      <AlertTriangle size={16} />
-                      Solicitar corrección
+                    <h3
+                      className={
+                        seAbriraDisputa
+                          ? "font-semibold text-red-900 dark:text-red-200 flex items-center gap-2"
+                          : "font-semibold text-orange-900 dark:text-orange-200 flex items-center gap-2"
+                      }
+                    >
+                      {seAbriraDisputa ? <Flag size={16} /> : <AlertTriangle size={16} />}
+                      {seAbriraDisputa ? "Ya usaste tu corrección" : "Solicitar corrección"}
                     </h3>
-                    <p className="text-xs text-orange-800/80 dark:text-orange-200/80 mt-1">
-                      Explícale al trabajador qué debe ajustar antes de liberar el pago.
+                    <p
+                      className={
+                        seAbriraDisputa
+                          ? "text-xs text-red-800/80 dark:text-red-200/80 mt-1"
+                          : "text-xs text-orange-800/80 dark:text-orange-200/80 mt-1"
+                      }
+                    >
+                      {seAbriraDisputa
+                        ? "Ya solicitaste una corrección en esta solicitud. Enviar otra la pasará directamente a disputa y nuestro equipo mediará el caso, en vez de otra ronda de ajustes."
+                        : "Explícale al trabajador qué debe ajustar antes de liberar el pago."}
                     </p>
                   </div>
                   <Textarea
@@ -321,9 +351,17 @@ export const RevisionTrabajoDialog = ({ solicitud, open, onOpenChange, onAprobar
                       size="sm"
                       onClick={handleEnviarCorreccion}
                       disabled={enviandoCorreccion}
-                      className="bg-orange-500 hover:bg-orange-600 text-white"
+                      className={
+                        seAbriraDisputa
+                          ? "bg-red-600 hover:bg-red-700 text-white"
+                          : "bg-orange-500 hover:bg-orange-600 text-white"
+                      }
                     >
-                      {enviandoCorreccion ? "Enviando..." : "Enviar solicitud de corrección"}
+                      {enviandoCorreccion
+                        ? "Enviando..."
+                        : seAbriraDisputa
+                          ? "Enviar y abrir disputa"
+                          : "Enviar solicitud de corrección"}
                     </Button>
                   </div>
                 </section>

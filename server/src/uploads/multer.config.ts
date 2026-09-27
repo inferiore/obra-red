@@ -20,7 +20,7 @@ export class MulterConfigService implements MulterOptionsFactory {
       fileFilter: (req, file, cb) => {
         cb(null, /^image\/(jpeg|png|webp)$/.test(file.mimetype));
       },
-      limits: { fileSize: 5 * 1024 * 1024 },
+      limits: { fileSize: 20 * 1024 * 1024 },
     };
   }
 }

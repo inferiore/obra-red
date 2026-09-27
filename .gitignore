@@ -13,6 +13,9 @@ dist-ssr
 *.local
 .env
 
+# Proyecto ajeno (Laravel) que quedó suelto en la raíz, no forma parte de ObraRed
+/library/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

@@ -1,28 +1,39 @@
-import { Lock, ShieldCheck, Star, UserCheck, BadgeCheck, CreditCard } from "lucide-react";
+import {
+  Lock,
+  ShieldCheck,
+  Star,
+  UserCheck,
+  BadgeCheck,
+  CreditCard,
+} from "lucide-react";
 
 const trustItems = [
   {
     icon: Lock,
     title: "Pago Escrow",
-    description: "Tu dinero se retiene de forma segura hasta que confirmes que el trabajo está completo. Protección total.",
+    description:
+      "Tu dinero se retiene de forma segura hasta que confirmes que el trabajo está completo. Protección total.",
     highlight: true,
   },
   {
     icon: UserCheck,
     title: "Perfiles verificados",
-    description: "Verificamos la identidad y antecedentes de cada trabajador registrado en la plataforma.",
+    description:
+      "Verificamos la identidad y antecedentes de cada trabajador registrado en la plataforma.",
     highlight: false,
   },
   {
     icon: Star,
     title: "Calificaciones reales",
-    description: "Solo clientes que contrataron pueden dejar reseñas. Transparencia total para tomar mejores decisiones.",
+    description:
+      "Solo clientes que contrataron pueden dejar reseñas. Transparencia total para tomar mejores decisiones.",
     highlight: false,
   },
   {
     icon: ShieldCheck,
     title: "Soporte 24/7",
-    description: "Nuestro equipo está disponible para resolver cualquier problema durante todo el proceso.",
+    description:
+      "Nuestro equipo está disponible para resolver cualquier problema durante todo el proceso.",
     highlight: false,
   },
 ];
@@ -57,14 +68,25 @@ const TrustSection = () => {
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <CreditCard size={24} className="text-primary" />
-                <h3 className="text-2xl font-bold">¿Cómo funciona el pago seguro?</h3>
+                <h3 className="text-2xl font-bold">
+                  ¿Cómo funciona el pago seguro?
+                </h3>
               </div>
               <div className="space-y-4">
                 {[
-                  { step: "1", text: "El cliente deposita el pago al aceptar una oferta" },
-                  { step: "2", text: "ObraRed retiene el dinero de forma segura (escrow)" },
+                  {
+                    step: "1",
+                    text: "El cliente deposita el pago al aceptar una oferta",
+                  },
+                  {
+                    step: "2",
+                    text: "ObraRed retiene el dinero de forma segura (escrow)",
+                  },
                   { step: "3", text: "El trabajador realiza el servicio" },
-                  { step: "4", text: "El cliente confirma y se libera el pago" },
+                  {
+                    step: "4",
+                    text: "El cliente confirma y se libera el pago",
+                  },
                 ].map((item) => (
                   <div key={item.step} className="flex items-start gap-3">
                     <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
@@ -80,7 +102,8 @@ const TrustSection = () => {
                 <Lock size={48} className="text-primary" />
               </div>
               <p className="text-center text-sm opacity-70 max-w-xs">
-                Si no estás satisfecho, puedes solicitar un reembolso. Tu dinero siempre está protegido.
+                Si no estás satisfecho, puedes solicitar un reembolso. Tu dinero
+                siempre está protegido.
               </p>
               <div className="flex items-center gap-2 bg-success/20 text-success rounded-full px-4 py-2 text-sm font-medium">
                 <BadgeCheck size={16} />
@@ -89,17 +112,6 @@ const TrustSection = () => {
             </div>
           </div>
         </div>
-
-        {/* Trust Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
-          {stats.map((stat) => (
-            <div key={stat.label} className="text-center py-6 px-4 rounded-2xl bg-primary-foreground/5 border border-primary-foreground/10">
-              <p className="text-2xl md:text-3xl font-bold text-primary mb-1">{stat.value}</p>
-              <p className="text-xs md:text-sm opacity-60">{stat.label}</p>
-            </div>
-          ))}
-        </div>
-
         {/* Trust Cards */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {trustItems.map((item) => (
@@ -115,7 +127,9 @@ const TrustSection = () => {
                 <item.icon size={26} />
               </div>
               <h3 className="text-lg font-bold mb-2">{item.title}</h3>
-              <p className="text-sm opacity-70 leading-relaxed">{item.description}</p>
+              <p className="text-sm opacity-70 leading-relaxed">
+                {item.description}
+              </p>
             </div>
           ))}
         </div>

@@ -18,6 +18,7 @@ import type { Solicitud } from "@/types/solicitud";
 import { ordenarPorMejor, razonMejorOferta, type Oferta } from "@/lib/ofertas";
 import { useOfertasStore } from "@/store/ofertasStore";
 import { TrabajadorPerfilDialog } from "@/components/TrabajadorPerfilDialog";
+import { CarnetTrabajadorDialog } from "@/components/CarnetTrabajadorDialog";
 
 const formatCOP = (n: number) =>
   new Intl.NumberFormat("es-CO", {
@@ -158,6 +159,7 @@ export const OfertasDialog = ({ solicitud, open, onOpenChange, onAceptar }: Prop
   const [ofertaPendiente, setOfertaPendiente] = useState<Oferta | null>(null);
   const [ofertaPago, setOfertaPago] = useState<Oferta | null>(null);
   const [perfilUsername, setPerfilUsername] = useState<string | null>(null);
+  const [verCarnet, setVerCarnet] = useState(false);
 
   useEffect(() => {
     if (solicitud && open) fetchBySolicitud(solicitud.id);
@@ -258,11 +260,18 @@ export const OfertasDialog = ({ solicitud, open, onOpenChange, onAceptar }: Prop
         onOpenChange={(v) => !v && setOfertaPago(null)}
         onPagoCompletado={handlePagoCompletado}
         onIrAlSeguimiento={handleCerrarPago}
+        onVerCarnet={() => setVerCarnet(true)}
       />
       <TrabajadorPerfilDialog
         username={perfilUsername}
         open={!!perfilUsername}
         onOpenChange={(v) => !v && setPerfilUsername(null)}
+      />
+      <CarnetTrabajadorDialog
+        solicitud={solicitud}
+        trabajadorUsername={ofertaPago?.trabajadorUsername ?? null}
+        open={verCarnet}
+        onOpenChange={setVerCarnet}
       />
     </Dialog>
   );

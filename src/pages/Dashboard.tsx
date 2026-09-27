@@ -14,6 +14,9 @@ import {
   Camera,
   Briefcase,
   PenIcon,
+  Flag,
+  ShieldCheck,
+  IdCard,
 } from "lucide-react";
 import {
   Select,
@@ -28,6 +31,10 @@ import { RevisionTrabajoDialog } from "@/components/RevisionTrabajoDialog";
 import { ProgresoTrabajoDialog } from "@/components/ProgresoTrabajoDialog";
 import { EvidenciasUploadDialog } from "@/components/EvidenciasUploadDialog";
 import { CalificacionDialog } from "@/components/CalificacionDialog";
+import { CarnetTrabajadorDialog } from "@/components/CarnetTrabajadorDialog";
+import { puedeVerCarnet } from "@/lib/carnet";
+import { NotificacionesMenu } from "@/components/NotificacionesMenu";
+import { MensajesMenu } from "@/components/MensajesMenu";
 import { Badge } from "@/components/ui/badge";
 import logo from "@/assets/obrared-logo.png";
 import { useNavigate } from "react-router-dom";
@@ -54,6 +61,7 @@ import {
   type SolicitudEstado,
 } from "@/types/solicitud";
 import { useToast } from "@/hooks/use-toast";
+import { tieneOfertaPendiente } from "@/lib/ofertas";
 
 const tipoLabel = (tipo: string) =>
   TIPOS_TRABAJO.find((t) => t.value === tipo)?.label ?? tipo;
@@ -195,6 +203,7 @@ const Dashboard = () => {
   const evidenciasOf = solicitudes.find((s) => s.id === evidenciasOfId) ?? null;
   const [calificarOf, setCalificarOf] = useState<Solicitud | null>(null);
   const [solicitud, setSolicitud] = useState<Solicitud | null>(null);
+  const [carnetOf, setCarnetOf] = useState<Solicitud | null>(null);
 
   useEffect(() => {
     fetchAllSolicitudes();
@@ -211,6 +220,7 @@ const Dashboard = () => {
 
   const isCliente = user?.role === "cliente";
   const isTrabajador = user?.role === "trabajador";
+  const isAdmin = user?.role === "admin";
   const username = user?.username ?? "";
 
   const handleLogout = () => {
@@ -229,12 +239,11 @@ const Dashboard = () => {
   };
 
   // ids de solicitudes a las que el trabajador actual ya envió una oferta
+  // pendiente (una rechazada no bloquea reofertar)
   const misOfertasSolicitudIds = useMemo(() => {
     if (!isTrabajador) return [];
     return solicitudes
-      .filter((s) =>
-        s.ofertas?.some((o) => o.trabajadorUsername === username)
-      )
+      .filter((s) => tieneOfertaPendiente(s, username))
       .map((s) => s.id);
   }, [isTrabajador, solicitudes, username]);
 
@@ -279,6 +288,7 @@ const Dashboard = () => {
     ejecucion: baseList.filter((s) => s.estado === "ejecucion").length,
     revision: baseList.filter((s) => s.estado === "revision").length,
     corrigiendo: baseList.filter((s) => s.estado === "corrigiendo").length,
+    disputa: baseList.filter((s) => s.estado === "disputa").length,
     finalizado: baseList.filter((s) => s.estado === "finalizado").length,
   };
 
@@ -305,6 +315,8 @@ const Dashboard = () => {
             </span>
           </button>
           <div className="flex items-center gap-2">
+            <NotificacionesMenu />
+            <MensajesMenu />
             <button
               onClick={() => navigate("/perfil")}
               className="hidden sm:flex flex-col items-end text-right hover:opacity-80 transition-opacity"
@@ -333,6 +345,26 @@ const Dashboard = () => {
       </header>
 
       <main className="container mx-auto px-4 py-6 md:py-10 space-y-6">
+        {isAdmin ? (
+          <Card className="max-w-xl mx-auto shadow-elevated">
+            <CardContent className="py-12 text-center space-y-4">
+              <div className="mx-auto h-14 w-14 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                <ShieldCheck size={28} />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold">Panel de administrador</h1>
+                <p className="text-muted-foreground text-sm mt-1">
+                  Revisa la trazabilidad completa de cualquier solicitud, media en disputas por
+                  chat y resuélvelas.
+                </p>
+              </div>
+              <Button size="lg" onClick={() => navigate("/admin/solicitudes")}>
+                Ir al panel de solicitudes
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <>
         {/* Title + CTA */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div>
@@ -471,6 +503,12 @@ const Dashboard = () => {
                   onClick: () => setEvidenciasOfId(s.id),
                   icon: <Camera size={14} />,
                 };
+              } else if (isTrabajador && s.estado === "disputa") {
+                action = {
+                  label: "Subir evidencia de disputa",
+                  onClick: () => setEvidenciasOfId(s.id),
+                  icon: <Flag size={14} />,
+                };
               } else if (
                 isCliente &&
                 (s.estado === "ejecucion" || s.estado === "corrigiendo")
@@ -479,6 +517,12 @@ const Dashboard = () => {
                   label: "Ver progreso",
                   onClick: () => setProgresoOf(s),
                   icon: <Clock size={14} />,
+                };
+              } else if (isCliente && s.estado === "disputa") {
+                action = {
+                  label: "Ver disputa",
+                  onClick: () => setProgresoOf(s),
+                  icon: <Flag size={14} />,
                 };
               } else if (isCliente && s.estado === "revision") {
                 action = {
@@ -513,6 +557,23 @@ const Dashboard = () => {
                 };
               }
 
+              // "Ver carnet" para el trabajador asignado, en cualquier estado
+              // activo (ejecucion/revision/corrigiendo/disputa) que no tenga
+              // ya ocupados ambos slots de acción de la tarjeta.
+              if (
+                isTrabajador &&
+                s.trabajadorAsignado === username &&
+                puedeVerCarnet(s)
+              ) {
+                const verCarnetAction = {
+                  label: "Ver carnet",
+                  onClick: () => setCarnetOf(s),
+                  icon: <IdCard size={14} />,
+                };
+                if (!secondaryAction) secondaryAction = verCarnetAction;
+                else if (!action) action = verCarnetAction;
+              }
+
               const ofertasCount =
                 isCliente &&
                 (s.estado === "publicado" || s.estado === "ejecucion")
@@ -536,6 +597,8 @@ const Dashboard = () => {
               );
             })}
           </div>
+        )}
+          </>
         )}
       </main>
 
@@ -561,6 +624,10 @@ const Dashboard = () => {
         solicitud={progresoOf}
         open={!!progresoOf}
         onOpenChange={(v) => !v && setProgresoOf(null)}
+        onAbrirEvidenciaDisputa={(id) => {
+          setProgresoOf(null);
+          setEvidenciasOfId(id);
+        }}
       />
       <EvidenciasUploadDialog
         solicitud={evidenciasOf}
@@ -571,6 +638,12 @@ const Dashboard = () => {
         solicitud={calificarOf}
         open={!!calificarOf}
         onOpenChange={(v) => !v && setCalificarOf(null)}
+      />
+      <CarnetTrabajadorDialog
+        solicitud={carnetOf}
+        trabajadorUsername={carnetOf?.trabajadorAsignado ?? null}
+        open={!!carnetOf}
+        onOpenChange={(v) => !v && setCarnetOf(null)}
       />
     </div>
   );

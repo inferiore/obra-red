@@ -23,6 +23,7 @@ export type SolicitudEstado =
   | 'ejecucion'
   | 'revision'
   | 'corrigiendo'
+  | 'disputa'
   | 'finalizado';
 
 @Entity('solicitudes')
@@ -69,8 +70,14 @@ export class Solicitud {
   @Column({ type: 'text', nullable: true })
   evidenciaNota?: string;
 
-  @Column({ type: 'text', nullable: true })
-  correccionComentario?: string;
+  @Column({ type: 'simple-json', default: '[]' })
+  correcciones: string[];
+
+  @Column({ type: 'simple-json', default: '[]' })
+  evidenciaDisputa: { url: string; autorUsername: string; createdAt: string }[];
+
+  @Column({ type: 'int', default: 0 })
+  correccionesCount: number;
 
   @CreateDateColumn()
   createdAt: Date;

@@ -51,6 +51,7 @@ interface AuthState {
   logout: () => void;
   register: (data: AuthUser) => Promise<{ ok: boolean; error?: string }>;
   updateProfile: (data: ProfileUpdate) => Promise<{ ok: boolean; error?: string }>;
+  cambiarPassword: (actual: string, nueva: string) => Promise<{ ok: boolean; error?: string }>;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -96,6 +97,20 @@ export const useAuthStore = create<AuthState>()(
             token,
           });
           set({ user: toSessionUser(updated) });
+          return { ok: true };
+        } catch (e) {
+          return { ok: false, error: errorMessage(e) };
+        }
+      },
+
+      cambiarPassword: async (actual, nueva) => {
+        const { token } = get();
+        try {
+          await apiFetch<void>("/auth/cambiar-password", {
+            method: "PATCH",
+            body: { actual, nueva },
+            token,
+          });
           return { ok: true };
         } catch (e) {
           return { ok: false, error: errorMessage(e) };

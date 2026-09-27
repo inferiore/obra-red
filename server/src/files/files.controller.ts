@@ -1,5 +1,7 @@
 import {
+  Body,
   Controller,
+  Delete,
   Get,
   ParseFilePipe,
   Post,
@@ -20,10 +22,18 @@ export class FilesController {
 
   @Post()
   @UseInterceptors(FilesInterceptor('files', 5))
-  store(
+  async store(
     @UploadedFiles(new ParseFilePipe({ validators: [] }))
     files: Express.Multer.File[],
+    @Body('object') object: string,
+    @Body('objectId') objectId: string,
   ) {
+    await this.fileService.store(object, objectId, files);
     return { path: files.map((f) => `/uploads/${f.filename}`) };
+  }
+
+  @Delete()
+  async delete(@Body('ids') ids: Array<string>) {
+    await this.fileService.delete(ids);
   }
 }

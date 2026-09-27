@@ -7,6 +7,9 @@ import {
   Lock,
   Send,
   User,
+  AlertTriangle,
+  Camera,
+  IdCard,
 } from "lucide-react";
 import {
   Dialog,
@@ -19,7 +22,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { TIPOS_TRABAJO } from "@/types/solicitud";
+import { CarnetTrabajadorDialog } from "@/components/CarnetTrabajadorDialog";
+import { puedeVerCarnet } from "@/lib/carnet";
+import { TIPOS_TRABAJO, ESTADO_LABELS } from "@/types/solicitud";
 import type { Solicitud } from "@/types/solicitud";
 
 const tipoLabel = (t: string) => TIPOS_TRABAJO.find((x) => x.value === t)?.label ?? t;
@@ -36,6 +41,7 @@ interface Props {
   solicitud: Solicitud | null;
   open: boolean;
   onOpenChange: (v: boolean) => void;
+  onAbrirEvidenciaDisputa?: (id: string) => void;
 }
 
 interface Mensaje {
@@ -44,7 +50,12 @@ interface Mensaje {
   hora: string;
 }
 
-export const ProgresoTrabajoDialog = ({ solicitud, open, onOpenChange }: Props) => {
+export const ProgresoTrabajoDialog = ({
+  solicitud,
+  open,
+  onOpenChange,
+  onAbrirEvidenciaDisputa,
+}: Props) => {
   const [mensajes, setMensajes] = useState<Mensaje[]>([
     {
       autor: "trabajador",
@@ -58,6 +69,7 @@ export const ProgresoTrabajoDialog = ({ solicitud, open, onOpenChange }: Props) 
     },
   ]);
   const [draft, setDraft] = useState("");
+  const [carnetOpen, setCarnetOpen] = useState(false);
 
   if (!solicitud) return null;
 
@@ -90,14 +102,52 @@ export const ProgresoTrabajoDialog = ({ solicitud, open, onOpenChange }: Props) 
               </DialogDescription>
             </div>
           </div>
-          <Badge className="self-start mt-2 bg-amber-500/10 text-amber-700 hover:bg-amber-500/10 border-amber-500/20 gap-1">
-            <Clock size={11} />
-            En ejecución
-          </Badge>
+          <div className="flex flex-wrap items-center gap-2 mt-2">
+            <Badge className="bg-amber-500/10 text-amber-700 hover:bg-amber-500/10 border-amber-500/20 gap-1">
+              <Clock size={11} />
+              {ESTADO_LABELS[solicitud.estado]}
+            </Badge>
+            {puedeVerCarnet(solicitud) && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs gap-1"
+                onClick={() => setCarnetOpen(true)}
+              >
+                <IdCard size={12} />
+                Ver carnet
+              </Button>
+            )}
+          </div>
         </DialogHeader>
 
         <ScrollArea className="min-h-0">
           <div className="px-5 sm:px-6 py-5 space-y-4">
+            {solicitud.estado === "disputa" && onAbrirEvidenciaDisputa && (
+              <div className="rounded-xl border border-red-200 dark:border-red-500/30 bg-card p-4">
+                <div className="flex items-start gap-2 mb-3">
+                  <AlertTriangle size={16} className="text-red-600 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-semibold text-red-900 dark:text-red-200">
+                      Esta solicitud está en disputa
+                    </p>
+                    <p className="text-xs text-red-800/80 dark:text-red-200/80 mt-0.5">
+                      Sube evidencia adicional para sustentar tu posición. Nuestro equipo la
+                      revisará junto con la del trabajador.
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  className="w-full bg-red-600 hover:bg-red-700 text-white"
+                  onClick={() => onAbrirEvidenciaDisputa(solicitud.id)}
+                >
+                  <Camera size={14} />
+                  Ver y subir evidencia de disputa
+                </Button>
+              </div>
+            )}
+
             {/* Timeline */}
             <div className="rounded-xl border bg-card p-4">
               <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold mb-3">
@@ -188,6 +238,13 @@ export const ProgresoTrabajoDialog = ({ solicitud, open, onOpenChange }: Props) 
           </Button>
         </div>
       </DialogContent>
+
+      <CarnetTrabajadorDialog
+        solicitud={solicitud}
+        trabajadorUsername={solicitud.trabajadorAsignado ?? null}
+        open={carnetOpen}
+        onOpenChange={setCarnetOpen}
+      />
     </Dialog>
   );
 };

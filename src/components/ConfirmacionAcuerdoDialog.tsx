@@ -297,10 +297,22 @@ export const ConfirmacionAcuerdoDialog = ({
               />
               <span className="text-sm leading-snug">
                 Acepto los{" "}
-                <span className="font-semibold underline">
-                  términos del servicio
-                </span>{" "}
-                y las condiciones de la plataforma ObraRed.
+                <button
+                  type="button"
+                  onClick={() => setLegalOpen("terminos")}
+                  className="text-primary font-medium underline underline-offset-2 hover:text-primary/80 transition-colors"
+                >
+                  términos y condiciones
+                </button>{" "}
+                y la{" "}
+                <button
+                  type="button"
+                  onClick={() => setLegalOpen("privacidad")}
+                  className="text-primary font-medium underline underline-offset-2 hover:text-primary/80 transition-colors"
+                >
+                  política de privacidad
+                </button>{" "}
+                de ObraRed.
               </span>
             </label>
           </div>
