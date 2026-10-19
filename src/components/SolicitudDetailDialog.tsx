@@ -179,11 +179,11 @@ export const SolicitudDetailDialog = ({ solicitud, open, onOpenChange, onOfertaE
               <p className="text-sm mt-1 font-medium">{solicitud.clienteNombre}</p>
             </section>
 
-            {solicitud.fotos.length > 0 && (
+            {(solicitud.fotos?.length ?? 0) > 0 && (
               <section>
                 <h4 className="text-sm font-semibold mb-2">Fotos</h4>
                 <div className="grid grid-cols-3 gap-2">
-                  {solicitud.fotos.map((src, i) => (
+                  {(solicitud.fotos ?? []).map((src, i) => (
                     <img
                       key={i}
                       src={resolveFileUrl(src)}

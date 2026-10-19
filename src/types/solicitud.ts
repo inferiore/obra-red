@@ -67,7 +67,10 @@ export interface Solicitud {
   descripcion: string;
   presupuesto: number;
   ubicacion: string;
-  fotos: string[]; // data URLs
+  // No siempre vienen: el listado (GET /solicitudes) las excluye del `select`
+  // por su peso en base64 (ver SolicitudesService.findAll) — solo vienen al
+  // crear la solicitud o al pedir su detalle puntual (GET /solicitudes/:id).
+  fotos?: string[]; // data URLs
   estado: SolicitudEstado;
   trabajadorAsignado?: string;
   // Sí vienen en el listado (GET /solicitudes) — el backend las embebe

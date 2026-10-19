@@ -73,4 +73,24 @@ describe("SolicitudDetailDialog", () => {
 
     expect(screen.queryByText("Fotos")).not.toBeInTheDocument();
   });
+
+  it("no revienta cuando `fotos` viene undefined, como la trae GET /solicitudes (listado) al abrir una card", () => {
+    // SolicitudesService.findAll excluye la columna `fotos` del `select` por
+    // peso (ver server/src/solicitudes/solicitudes.service.ts), así que el
+    // objeto que Dashboard pasa a este dialog al hacer click en una card no
+    // trae ese campo en absoluto.
+    const { fotos, ...sinFotos } = solicitudBase;
+
+    expect(() =>
+      render(
+        <SolicitudDetailDialog
+          solicitud={sinFotos as typeof solicitudBase}
+          open
+          onOpenChange={() => {}}
+        />,
+      ),
+    ).not.toThrow();
+
+    expect(screen.queryByText("Fotos")).not.toBeInTheDocument();
+  });
 });
