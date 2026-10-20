@@ -158,6 +158,17 @@ export class OfertasService {
     return guardada;
   }
 
+  async existeAceptada(solicitudId: string): Promise<boolean> {
+    const count = await this.ofertasRepo.count({
+      where: { solicitudId, estado: 'aceptada' },
+    });
+    return count > 0;
+  }
+
+  async eliminarPorSolicitud(solicitudId: string): Promise<void> {
+    await this.ofertasRepo.delete({ solicitudId });
+  }
+
   async aceptar(ofertaId: string): Promise<Solicitud> {
     const solicitud = await this.dataSource.transaction(async (manager) => {
       const oferta = await manager.findOne(Oferta, { where: { id: ofertaId } });

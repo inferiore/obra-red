@@ -11,7 +11,13 @@ import { CreateOfertaDto } from './dto/create-oferta.dto';
 
 describe('OfertasService', () => {
   let service: OfertasService;
-  let ofertasRepo: { findOne: jest.Mock; create: jest.Mock; save: jest.Mock };
+  let ofertasRepo: {
+    findOne: jest.Mock;
+    create: jest.Mock;
+    save: jest.Mock;
+    count: jest.Mock;
+    delete: jest.Mock;
+  };
   let solicitudesRepo: { findOne: jest.Mock };
   let dataSource: { transaction: jest.Mock };
   let notificacionesService: { crear: jest.Mock };
@@ -29,6 +35,8 @@ describe('OfertasService', () => {
       findOne: jest.fn(),
       create: jest.fn((data) => data),
       save: jest.fn((data) => Promise.resolve({ id: 'oferta-1', ...data })),
+      count: jest.fn(),
+      delete: jest.fn().mockResolvedValue(undefined),
     };
     solicitudesRepo = {
       findOne: jest.fn(),
@@ -279,6 +287,31 @@ describe('OfertasService', () => {
       await expect(service.aceptar(ofertaId)).resolves.toMatchObject({
         estado: 'ejecucion',
       });
+    });
+  });
+
+  describe('existeAceptada', () => {
+    it('devuelve true si hay al menos una oferta aceptada para la solicitud', async () => {
+      ofertasRepo.count.mockResolvedValue(1);
+
+      await expect(service.existeAceptada('solicitud-1')).resolves.toBe(true);
+      expect(ofertasRepo.count).toHaveBeenCalledWith({
+        where: { solicitudId: 'solicitud-1', estado: 'aceptada' },
+      });
+    });
+
+    it('devuelve false si no hay ninguna oferta aceptada para la solicitud', async () => {
+      ofertasRepo.count.mockResolvedValue(0);
+
+      await expect(service.existeAceptada('solicitud-1')).resolves.toBe(false);
+    });
+  });
+
+  describe('eliminarPorSolicitud', () => {
+    it('elimina todas las ofertas asociadas a la solicitud', async () => {
+      await service.eliminarPorSolicitud('solicitud-1');
+
+      expect(ofertasRepo.delete).toHaveBeenCalledWith({ solicitudId: 'solicitud-1' });
     });
   });
 });

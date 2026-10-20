@@ -17,6 +17,7 @@ import {
   Flag,
   ShieldCheck,
   IdCard,
+  Trash2,
 } from "lucide-react";
 import {
   Select,
@@ -50,6 +51,16 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useAuthStore } from "@/store/authStore";
 import { useSolicitudesStore } from "@/store/solicitudesStore";
 import { EstadoBadge } from "@/components/EstadoBadge";
@@ -79,6 +90,7 @@ const SolicitudCard = ({
   secondaryAction,
   onVerMas,
   onVerOfertas,
+  onEliminar,
   ofertasCount,
   showCliente = false,
 }: {
@@ -91,6 +103,7 @@ const SolicitudCard = ({
   };
   onVerMas?: () => void;
   onVerOfertas?: () => void;
+  onEliminar?: () => void;
   ofertasCount?: number;
   showCliente?: boolean;
 }) => (
@@ -113,7 +126,20 @@ const SolicitudCard = ({
             {s.descripcion}
           </CardTitle>
         </div>
-        <EstadoBadge estado={s.estado} />
+        <div className="flex items-start gap-1 shrink-0">
+          <EstadoBadge estado={s.estado} />
+          {onEliminar && (
+            <Button
+              onClick={onEliminar}
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-500/10"
+              aria-label="Eliminar solicitud"
+            >
+              <Trash2 size={14} />
+            </Button>
+          )}
+        </div>
       </div>
     </CardHeader>
     <CardContent className="space-y-3">
@@ -188,6 +214,7 @@ const Dashboard = () => {
   const fetchAllSolicitudes = useSolicitudesStore((s) => s.fetchAll);
   const porUsuario = useSolicitudesStore((s) => s.porUsuario);
   const actualizarEstado = useSolicitudesStore((s) => s.actualizarEstado);
+  const eliminarSolicitud = useSolicitudesStore((s) => s.eliminar);
   const navigate = useNavigate();
   const { toast } = useToast();
   const [openForm, setOpenForm] = useState(false);
@@ -204,6 +231,9 @@ const Dashboard = () => {
   const [calificarOf, setCalificarOf] = useState<Solicitud | null>(null);
   const [solicitud, setSolicitud] = useState<Solicitud | null>(null);
   const [carnetOf, setCarnetOf] = useState<Solicitud | null>(null);
+  const [confirmEliminarId, setConfirmEliminarId] = useState<string | null>(
+    null
+  );
 
   useEffect(() => {
     fetchAllSolicitudes();
@@ -226,6 +256,13 @@ const Dashboard = () => {
   const handleLogout = () => {
     logout();
     navigate("/login");
+  };
+
+  const handleEliminar = async () => {
+    if (!confirmEliminarId) return;
+    await eliminarSolicitud(confirmEliminarId);
+    toast({ title: "Solicitud eliminada" });
+    setConfirmEliminarId(null);
   };
 
   const finalizar = async (s: Solicitud) => {
@@ -579,6 +616,12 @@ const Dashboard = () => {
                 (s.estado === "publicado" || s.estado === "ejecucion")
                   ? s.ofertas?.length
                   : undefined;
+
+              const puedeEliminar =
+                isCliente &&
+                !s.trabajadorAsignado &&
+                !s.ofertas?.some((o) => o.estado === "aceptada");
+
               return (
                 <SolicitudCard
                   key={s.id}
@@ -586,11 +629,14 @@ const Dashboard = () => {
                   action={action}
                   secondaryAction={secondaryAction}
                   showCliente={!isCliente}
-                  onVerMas={isTrabajador ? () => setDetalle(s) : undefined}
+                  onVerMas={() => setDetalle(s)}
                   onVerOfertas={
                     isCliente && s.estado === "publicado"
                       ? () => setOfertasOf(s)
                       : undefined
+                  }
+                  onEliminar={
+                    puedeEliminar ? () => setConfirmEliminarId(s.id) : undefined
                   }
                   ofertasCount={ofertasCount}
                 />
@@ -645,6 +691,30 @@ const Dashboard = () => {
         open={!!carnetOf}
         onOpenChange={(v) => !v && setCarnetOf(null)}
       />
+
+      <AlertDialog
+        open={!!confirmEliminarId}
+        onOpenChange={(v) => !v && setConfirmEliminarId(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar esta solicitud?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Si tiene ofertas pendientes, se eliminarán junto con la
+              solicitud. Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleEliminar}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Sí, eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

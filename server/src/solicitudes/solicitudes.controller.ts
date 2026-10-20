@@ -104,7 +104,9 @@ export class SolicitudesController {
   }
 
   @Delete(':id')
-  eliminar(@Param('id') id: string) {
-    return this.solicitudesService.eliminar(id);
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('cliente')
+  eliminar(@Param('id') id: string, @Req() req: { user: JwtPayload }) {
+    return this.solicitudesService.eliminar(id, req.user.username);
   }
 }

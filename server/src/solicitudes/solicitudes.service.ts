@@ -140,8 +140,18 @@ export class SolicitudesService {
     return this.repo.save(merge);
   }
 
-  async eliminar(id: string): Promise<void> {
+  async eliminar(id: string, clienteUsername: string): Promise<void> {
     const solicitud = await this.findOne(id);
+    if (solicitud.clienteUsername !== clienteUsername) {
+      throw new ForbiddenException('No eres el dueño de esta solicitud');
+    }
+    if (solicitud.trabajadorAsignado) {
+      throw new ConflictException('Ya hay un trabajador asignado a esta solicitud');
+    }
+    if (await this.ofertasService.existeAceptada(id)) {
+      throw new ConflictException('Ya existe una oferta aceptada para esta solicitud');
+    }
+    await this.ofertasService.eliminarPorSolicitud(id);
     await this.repo.remove(solicitud);
   }
 

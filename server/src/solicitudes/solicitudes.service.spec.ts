@@ -15,21 +15,32 @@ import { AbrirDisputaDto } from './dto/abrir-disputa.dto';
 
 describe('SolicitudesService', () => {
   let service: SolicitudesService;
-  let repo: { findOne: jest.Mock; save: jest.Mock };
+  let repo: { findOne: jest.Mock; save: jest.Mock; remove: jest.Mock };
   let notificacionesService: { crear: jest.Mock };
+  let ofertasService: {
+    findBySolicitudIds: jest.Mock;
+    existeAceptada: jest.Mock;
+    eliminarPorSolicitud: jest.Mock;
+  };
 
   beforeEach(async () => {
     repo = {
       findOne: jest.fn(),
       save: jest.fn((data) => Promise.resolve(data)),
+      remove: jest.fn((data) => Promise.resolve(data)),
     };
     notificacionesService = { crear: jest.fn().mockResolvedValue(undefined) };
+    ofertasService = {
+      findBySolicitudIds: jest.fn(),
+      existeAceptada: jest.fn().mockResolvedValue(false),
+      eliminarPorSolicitud: jest.fn().mockResolvedValue(undefined),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SolicitudesService,
         { provide: getRepositoryToken(Solicitud), useValue: repo },
-        { provide: OfertasService, useValue: { findBySolicitudIds: jest.fn() } },
+        { provide: OfertasService, useValue: ofertasService },
         { provide: NotificacionesService, useValue: notificacionesService },
       ],
     }).compile();
@@ -482,6 +493,81 @@ describe('SolicitudesService', () => {
 
       await expect(service.resolverDisputa(id, 'finalizado')).rejects.toBeInstanceOf(
         ConflictException,
+      );
+    });
+  });
+
+  describe('eliminar', () => {
+    const id = 'solicitud-1';
+
+    it('elimina las ofertas de la solicitud y luego la solicitud si el dueño coincide y no hay trabajador asignado ni oferta aceptada', async () => {
+      const solicitud = {
+        id,
+        clienteUsername: 'cliente1',
+        estado: 'publicado',
+        trabajadorAsignado: undefined,
+      };
+      repo.findOne.mockResolvedValue(solicitud);
+      ofertasService.existeAceptada.mockResolvedValue(false);
+
+      await service.eliminar(id, 'cliente1');
+
+      expect(ofertasService.existeAceptada).toHaveBeenCalledWith(id);
+      expect(ofertasService.eliminarPorSolicitud).toHaveBeenCalledWith(id);
+      expect(repo.remove).toHaveBeenCalledWith(solicitud);
+    });
+
+    it('lanza ForbiddenException si quien pide eliminar no es el dueño de la solicitud', async () => {
+      repo.findOne.mockResolvedValue({
+        id,
+        clienteUsername: 'cliente1',
+        estado: 'publicado',
+        trabajadorAsignado: undefined,
+      });
+
+      await expect(service.eliminar(id, 'otro-cliente')).rejects.toBeInstanceOf(
+        ForbiddenException,
+      );
+      expect(ofertasService.eliminarPorSolicitud).not.toHaveBeenCalled();
+      expect(repo.remove).not.toHaveBeenCalled();
+    });
+
+    it('lanza ConflictException si ya hay un trabajador asignado', async () => {
+      repo.findOne.mockResolvedValue({
+        id,
+        clienteUsername: 'cliente1',
+        estado: 'ejecucion',
+        trabajadorAsignado: 'trabajador1',
+      });
+
+      await expect(service.eliminar(id, 'cliente1')).rejects.toBeInstanceOf(
+        ConflictException,
+      );
+      expect(ofertasService.eliminarPorSolicitud).not.toHaveBeenCalled();
+      expect(repo.remove).not.toHaveBeenCalled();
+    });
+
+    it('lanza ConflictException si ya existe una oferta aceptada', async () => {
+      repo.findOne.mockResolvedValue({
+        id,
+        clienteUsername: 'cliente1',
+        estado: 'publicado',
+        trabajadorAsignado: undefined,
+      });
+      ofertasService.existeAceptada.mockResolvedValue(true);
+
+      await expect(service.eliminar(id, 'cliente1')).rejects.toBeInstanceOf(
+        ConflictException,
+      );
+      expect(ofertasService.eliminarPorSolicitud).not.toHaveBeenCalled();
+      expect(repo.remove).not.toHaveBeenCalled();
+    });
+
+    it('lanza NotFoundException si la solicitud no existe', async () => {
+      repo.findOne.mockResolvedValue(null);
+
+      await expect(service.eliminar(id, 'cliente1')).rejects.toBeInstanceOf(
+        NotFoundException,
       );
     });
   });
