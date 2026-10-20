@@ -17,7 +17,6 @@ const crearOferta = (overrides: Partial<Oferta> = {}): Oferta => ({
   mensaje: "Puedo hacer el trabajo.",
   estado: "pendiente",
   createdAt: "2026-09-01T00:00:00.000Z",
-  expirada: false,
   ...overrides,
 });
 

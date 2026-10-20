@@ -64,14 +64,12 @@ const OfertaCard = ({
   <div
     className={[
       "rounded-xl border p-4 transition-all",
-      oferta.expirada
-        ? "border-border bg-muted/30 opacity-70"
-        : destacada
-          ? "border-primary/60 bg-primary/5 shadow-elevated relative"
-          : "border-border bg-card hover:border-primary/30",
+      destacada
+        ? "border-primary/60 bg-primary/5 shadow-elevated relative"
+        : "border-border bg-card hover:border-primary/30",
     ].join(" ")}
   >
-    {destacada && !oferta.expirada && (
+    {destacada && (
       <div className="absolute -top-3 left-4">
         <Badge className="bg-primary text-primary-foreground gap-1 shadow-soft">
           <Sparkles size={12} />
@@ -92,11 +90,6 @@ const OfertaCard = ({
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <p className="font-semibold truncate">{oferta.nombre}</p>
           <Estrellas valor={oferta.calificacion} />
-          {oferta.expirada && (
-            <Badge variant="outline" className="text-xs text-muted-foreground border-muted-foreground/30">
-              Oferta expirada
-            </Badge>
-          )}
         </div>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-muted-foreground">
           {oferta.verificado && (
@@ -128,7 +121,7 @@ const OfertaCard = ({
 
     <p className="text-sm text-muted-foreground mt-3 line-clamp-3">"{oferta.mensaje}"</p>
 
-    {destacada && !oferta.expirada && razon && (
+    {destacada && razon && (
       <p className="text-xs text-primary/90 font-medium mt-3 bg-primary/10 rounded-md px-2.5 py-1.5">
         ⭐ {razon}
       </p>
@@ -140,12 +133,11 @@ const OfertaCard = ({
       </Button>
       <Button
         size="sm"
-        className={destacada && !oferta.expirada ? "sm:flex-[2] shadow-elevated" : "sm:flex-1"}
+        className={destacada ? "sm:flex-[2] shadow-elevated" : "sm:flex-1"}
         onClick={onAceptar}
-        disabled={oferta.expirada}
       >
         <CheckCircle2 size={14} />
-        {oferta.expirada ? "Expirada" : "Aceptar oferta"}
+        Aceptar oferta
       </Button>
     </div>
   </div>
@@ -168,9 +160,7 @@ export const OfertasDialog = ({ solicitud, open, onOpenChange, onAceptar }: Prop
   const ofertasOrdenadas = useMemo(() => {
     if (!solicitud) return [];
     const ofertas = ofertasBySolicitud[solicitud.id] ?? [];
-    const vigentes = ofertas.filter((o) => !o.expirada);
-    const expiradas = ofertas.filter((o) => o.expirada);
-    return [...ordenarPorMejor(vigentes, solicitud.presupuesto), ...expiradas];
+    return ordenarPorMejor(ofertas, solicitud.presupuesto);
   }, [solicitud, ofertasBySolicitud]);
 
   if (!solicitud) return null;

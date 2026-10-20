@@ -179,7 +179,6 @@ describe("SolicitudDetailDialog - eliminar solicitud", () => {
               mensaje: "Puedo hacerlo",
               estado: "aceptada",
               createdAt: "2026-09-02T00:00:00.000Z",
-              expirada: false,
             },
           ],
         }}

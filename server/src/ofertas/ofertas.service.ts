@@ -28,7 +28,6 @@ export interface OfertaEnriquecida {
   mensaje: string;
   estado: Oferta['estado'];
   createdAt: Date;
-  expirada: boolean;
 }
 
 const DIAS_VIGENCIA_OFERTA = 3;
@@ -84,10 +83,11 @@ export class OfertasService {
       where: { solicitudId },
       order: { createdAt: 'ASC' },
     });
+    const vigentes = ofertas.filter((o) => !estaExpirada(o.createdAt));
     const trabajadores = await this.usersService.findByUsernames(
-      ofertas.map((o) => o.trabajadorUsername),
+      vigentes.map((o) => o.trabajadorUsername),
     );
-    return ofertas.map((o) => this.enriquecer(o, trabajadores));
+    return vigentes.map((o) => this.enriquecer(o, trabajadores));
   }
 
   async findBySolicitudIds(
@@ -98,11 +98,12 @@ export class OfertasService {
       where: { solicitudId: In(solicitudIds) },
       order: { createdAt: 'ASC' },
     });
+    const vigentes = ofertas.filter((o) => !estaExpirada(o.createdAt));
     const trabajadores = await this.usersService.findByUsernames(
-      ofertas.map((o) => o.trabajadorUsername),
+      vigentes.map((o) => o.trabajadorUsername),
     );
     const bySolicitud = new Map<string, OfertaEnriquecida[]>();
-    for (const o of ofertas) {
+    for (const o of vigentes) {
       const lista = bySolicitud.get(o.solicitudId) ?? [];
       lista.push(this.enriquecer(o, trabajadores));
       bySolicitud.set(o.solicitudId, lista);
@@ -127,7 +128,6 @@ export class OfertasService {
       mensaje: o.mensaje,
       estado: o.estado,
       createdAt: o.createdAt,
-      expirada: estaExpirada(o.createdAt),
     };
   }
 

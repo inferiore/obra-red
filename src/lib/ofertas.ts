@@ -17,7 +17,6 @@ export interface Oferta {
   mensaje: string;
   estado: OfertaEstado;
   createdAt: string;
-  expirada: boolean;
 }
 
 // Score: combina calificación, precio (menor es mejor vs presupuesto) y tiempo (menor es mejor)

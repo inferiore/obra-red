@@ -12,6 +12,7 @@ import { CreateOfertaDto } from './dto/create-oferta.dto';
 describe('OfertasService', () => {
   let service: OfertasService;
   let ofertasRepo: {
+    find: jest.Mock;
     findOne: jest.Mock;
     create: jest.Mock;
     save: jest.Mock;
@@ -21,6 +22,7 @@ describe('OfertasService', () => {
   let solicitudesRepo: { findOne: jest.Mock };
   let dataSource: { transaction: jest.Mock };
   let notificacionesService: { crear: jest.Mock };
+  let usersService: { findByUsernames: jest.Mock };
 
   const dto: CreateOfertaDto = {
     solicitudId: 'solicitud-1',
@@ -32,6 +34,7 @@ describe('OfertasService', () => {
 
   beforeEach(async () => {
     ofertasRepo = {
+      find: jest.fn().mockResolvedValue([]),
       findOne: jest.fn(),
       create: jest.fn((data) => data),
       save: jest.fn((data) => Promise.resolve({ id: 'oferta-1', ...data })),
@@ -43,13 +46,14 @@ describe('OfertasService', () => {
     };
     dataSource = { transaction: jest.fn() };
     notificacionesService = { crear: jest.fn().mockResolvedValue(undefined) };
+    usersService = { findByUsernames: jest.fn().mockResolvedValue(new Map()) };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         OfertasService,
         { provide: getRepositoryToken(Oferta), useValue: ofertasRepo },
         { provide: getRepositoryToken(Solicitud), useValue: solicitudesRepo },
-        { provide: UsersService, useValue: { findByUsernames: jest.fn() } },
+        { provide: UsersService, useValue: usersService },
         { provide: DataSource, useValue: dataSource },
         { provide: NotificacionesService, useValue: notificacionesService },
       ],
@@ -287,6 +291,97 @@ describe('OfertasService', () => {
       await expect(service.aceptar(ofertaId)).resolves.toMatchObject({
         estado: 'ejecucion',
       });
+    });
+  });
+
+  describe('findBySolicitud', () => {
+    const diasAtras = (dias: number) => {
+      const fecha = new Date();
+      fecha.setDate(fecha.getDate() - dias);
+      return fecha;
+    };
+
+    it('excluye las ofertas expiradas (más de 3 días) del resultado', async () => {
+      const ofertaExpirada = {
+        id: 'oferta-vieja',
+        solicitudId: 'solicitud-1',
+        trabajadorUsername: 'trabajador1',
+        precio: 50000,
+        mensaje: 'vieja',
+        estado: 'pendiente',
+        createdAt: diasAtras(10),
+      };
+      const ofertaVigente = {
+        id: 'oferta-nueva',
+        solicitudId: 'solicitud-1',
+        trabajadorUsername: 'trabajador2',
+        precio: 60000,
+        mensaje: 'nueva',
+        estado: 'pendiente',
+        createdAt: diasAtras(1),
+      };
+      ofertasRepo.find.mockResolvedValue([ofertaExpirada, ofertaVigente]);
+
+      const resultado = await service.findBySolicitud('solicitud-1');
+
+      expect(resultado).toHaveLength(1);
+      expect(resultado[0].id).toBe('oferta-nueva');
+      expect(resultado.find((o) => o.id === 'oferta-vieja')).toBeUndefined();
+      expect(usersService.findByUsernames).toHaveBeenCalledWith(['trabajador2']);
+    });
+
+    it('devuelve una oferta reciente sin marcarla como expirada', async () => {
+      const ofertaVigente = {
+        id: 'oferta-nueva',
+        solicitudId: 'solicitud-1',
+        trabajadorUsername: 'trabajador2',
+        precio: 60000,
+        mensaje: 'nueva',
+        estado: 'pendiente',
+        createdAt: diasAtras(1),
+      };
+      ofertasRepo.find.mockResolvedValue([ofertaVigente]);
+
+      const resultado = await service.findBySolicitud('solicitud-1');
+
+      expect(resultado).toHaveLength(1);
+      expect(resultado[0]).not.toHaveProperty('expirada');
+    });
+  });
+
+  describe('findBySolicitudIds', () => {
+    const diasAtras = (dias: number) => {
+      const fecha = new Date();
+      fecha.setDate(fecha.getDate() - dias);
+      return fecha;
+    };
+
+    it('excluye las ofertas expiradas al agrupar por solicitud', async () => {
+      const ofertaExpirada = {
+        id: 'oferta-vieja',
+        solicitudId: 'solicitud-1',
+        trabajadorUsername: 'trabajador1',
+        precio: 50000,
+        mensaje: 'vieja',
+        estado: 'pendiente',
+        createdAt: diasAtras(10),
+      };
+      const ofertaVigente = {
+        id: 'oferta-nueva',
+        solicitudId: 'solicitud-1',
+        trabajadorUsername: 'trabajador2',
+        precio: 60000,
+        mensaje: 'nueva',
+        estado: 'pendiente',
+        createdAt: diasAtras(1),
+      };
+      ofertasRepo.find.mockResolvedValue([ofertaExpirada, ofertaVigente]);
+
+      const resultado = await service.findBySolicitudIds(['solicitud-1']);
+
+      const ofertasSolicitud1 = resultado.get('solicitud-1') ?? [];
+      expect(ofertasSolicitud1).toHaveLength(1);
+      expect(ofertasSolicitud1[0].id).toBe('oferta-nueva');
     });
   });
 
