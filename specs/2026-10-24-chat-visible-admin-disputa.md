@@ -1,6 +1,6 @@
 # Spec: Admin puede ver el chat de la solicitud al mediar una disputa
 
-**Status:** approved
+**Status:** implemented
 **Date:** 2026-10-24
 **Area:** both
 
@@ -22,39 +22,46 @@ ver `specs/2026-10-24-chat-tiempo-real.md`, que debe resolverse primero o en par
   de una solicitud (el mismo chat que ya ven cliente y trabajador), especialmente útil cuando la
   solicitud está en estado `disputa`.
 - No se crea un chat ni un modelo de datos nuevo — se reutiliza el mecanismo de mensajes existente.
+- El admin también puede escribir en esa conversación para mediar activamente — ver nota abajo.
 
 ## Non-Goals / Out of Scope
 
-- Que el admin pueda escribir/participar activamente en el chat — en esta primera versión es solo
-  lectura. Si se necesita que el admin intervenga directamente en la conversación, es una
-  ampliación futura.
 - Resolver la disputa (eso es un spec aparte: `specs/2026-10-24-resolucion-disputa-pago.md`).
-- Notificar a cliente/trabajador de que el admin está leyendo la conversación.
+- Notificar a cliente/trabajador de que el admin está leyendo la conversación (sí se les notifica
+  cuando el admin **escribe** — ver nota abajo, eso no es un Non-Goal).
+
+> **Nota (actualizado tras revisar el estado real del código):** la versión original de este spec
+> proponía que el admin solo pudiera leer, no escribir. Al planear la implementación se encontró
+> que el backend (`mensajes.service.ts`) ya permitía al admin escribir mensajes, con una
+> notificación deliberada a **ambas** partes cuando el autor es admin — no era un descuido, sino
+> una funcionalidad ya pensada para que el admin medie activamente. Se decidió mantenerla en vez
+> de restringirla, así que el Goal de "solo lectura" se reemplaza por el de arriba.
 
 ## Proposed Approach
 
-En la vista de detalle de una solicitud dentro del panel de administrador, agregar una sección o
-botón que muestre el chat de esa solicitud en modo solo-lectura, reusando el componente/consulta
-de mensajes que ya existen para cliente/trabajador.
+En la vista de detalle de una solicitud dentro del panel de administrador, mostrar el chat de esa
+solicitud reusando el mismo componente/consulta de mensajes que ya existen para cliente/trabajador
+— sin restricción de lectura/escritura por rol.
 
 ## Backend Impact
 
-El endpoint de mensajes existente debe poder ser consultado también por el rol `admin` para
-cualquier solicitud (hoy probablemente solo permite a las partes de la solicitud — cliente y
-trabajador asignado — leer sus propios mensajes; confirmar y ajustar el guard de autorización
-durante la implementación).
+Ya implementado: `mensajes.service.ts` (`guardAcceso`) permite a cualquier usuario con
+`role === 'admin'` leer y escribir mensajes de cualquier solicitud, sin ser cliente dueño ni
+trabajador asignado. El marcado de "leído" no se dispara para admin (correcto, ya que no es
+destinatario). Al escribir, se notifica a ambas partes. Cubierto por tests en
+`mensajes.service.spec.ts`.
 
 ## Frontend Impact
 
-En la vista de detalle de solicitud del panel admin, agregar la sección de chat en modo
-solo-lectura, reusando el componente de chat ya existente en el proyecto en la medida de lo
-posible.
+Ya implementado: `src/pages/AdminSolicitudDetail.tsx` renderiza una Card "Chat" con un botón
+"Ver conversación" que abre `ChatSolicitudDialog` (el mismo componente completo, sin props
+especiales), visible siempre, sin importar el estado de la solicitud. Falta agregar cobertura de
+tests para este flujo (ver plan de implementación).
 
 ## Open Questions
 
-- ¿El admin debe ver el chat en cualquier estado de la solicitud, o solo cuando está en `disputa`?
-  Por defecto se propone mostrarlo siempre que el admin abra el detalle de una solicitud, ya que no
-  hay razón para ocultarlo en otros estados — ajustar si se prefiere restringirlo solo a `disputa`.
+Ninguna — resuelto: visible en cualquier estado (no solo `disputa`), y el admin puede leer y
+escribir.
 
 ---
 Once approved: set `Status: approved` above, then start a Claude Code session in Plan Mode

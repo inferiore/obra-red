@@ -112,4 +112,39 @@ describe("AdminSolicitudDetail", () => {
     expect(screen.queryByRole("button", { name: /reanudar trabajo/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /dar por finalizado/i })).not.toBeInTheDocument();
   });
+
+  it("muestra la card de Chat con el botón 'Ver conversación'", async () => {
+    renderDetalle();
+
+    await screen.findByText("Reparar tubería con fuga");
+    expect(screen.getByText("Chat")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /ver conversación/i })).toBeInTheDocument();
+  });
+
+  it("abre ChatSolicitudDialog al hacer clic en 'Ver conversación'", async () => {
+    renderDetalle();
+
+    const boton = await screen.findByRole("button", { name: /ver conversación/i });
+    fireEvent.click(boton);
+
+    expect(await screen.findByText("Aún no hay mensajes en esta conversación.")).toBeInTheDocument();
+  });
+
+  it.each([
+    ["publicado", { ...solicitudEnDisputa, estado: "publicado" as const }],
+    ["disputa", solicitudEnDisputa],
+  ])("muestra el botón 'Ver conversación' sin importar el estado (%s)", async (_estado, solicitud) => {
+    mockedApiFetch.mockImplementation(async (path: string) => {
+      if (path === "/solicitudes/sol-1") return solicitud;
+      if (path.startsWith("/ofertas")) return [];
+      if (path === "/solicitudes/sol-1/mensajes") return [];
+      if (path === "/mensajes/conversaciones") return [];
+      return {};
+    });
+    useSolicitudesStore.setState({ solicitudes: [solicitud], loading: false });
+
+    renderDetalle();
+
+    expect(await screen.findByRole("button", { name: /ver conversación/i })).toBeInTheDocument();
+  });
 });

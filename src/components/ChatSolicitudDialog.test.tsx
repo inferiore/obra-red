@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 
 const fetchBySolicitudMock = vi.fn();
 const enviarMock = vi.fn();
@@ -117,5 +117,63 @@ describe("ChatSolicitudDialog", () => {
         variant: "destructive",
       }),
     );
+  });
+
+  it("permite al admin ver los mensajes de la conversación igual que cualquier otro rol", async () => {
+    mensajesState.bySolicitud = {
+      "sol-1": [
+        {
+          id: "msg-1",
+          solicitudId: "sol-1",
+          autorUsername: "cliente1",
+          contenido: "Hola, ¿cuándo puede venir?",
+          leidoPorDestinatario: true,
+          createdAt: "2026-10-20T10:00:00.000Z",
+        },
+      ],
+    };
+    useAuthStore.setState({
+      user: { username: "admin1", name: "Admin Uno", role: "admin" },
+      token: "fake-token",
+    });
+
+    render(
+      <ChatSolicitudDialog solicitudId="sol-1" open onOpenChange={() => {}} estado="disputa" />,
+    );
+    await flushPromises();
+
+    expect(screen.getByText("Hola, ¿cuándo puede venir?")).toBeInTheDocument();
+  });
+
+  it("deja habilitado el input de envío para el admin (no se bloquea por rol)", async () => {
+    useAuthStore.setState({
+      user: { username: "admin1", name: "Admin Uno", role: "admin" },
+      token: "fake-token",
+    });
+
+    render(
+      <ChatSolicitudDialog solicitudId="sol-1" open onOpenChange={() => {}} estado="disputa" />,
+    );
+    await flushPromises();
+
+    const input = screen.getByPlaceholderText("Escribe un mensaje...");
+    expect(input).not.toBeDisabled();
+
+    fireEvent.change(input, { target: { value: "Hola, soy admin" } });
+    expect(screen.getByRole("button", { name: "" })).not.toBeDisabled();
+  });
+
+  it("bloquea el input incluso para el admin cuando la solicitud está finalizada", async () => {
+    useAuthStore.setState({
+      user: { username: "admin1", name: "Admin Uno", role: "admin" },
+      token: "fake-token",
+    });
+
+    render(
+      <ChatSolicitudDialog solicitudId="sol-1" open onOpenChange={() => {}} estado="finalizado" />,
+    );
+    await flushPromises();
+
+    expect(screen.getByPlaceholderText("Esta conversación ya finalizó")).toBeDisabled();
   });
 });
