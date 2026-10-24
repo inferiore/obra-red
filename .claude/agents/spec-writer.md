@@ -2,7 +2,7 @@
 name: spec-writer
 description: Use when the user describes a requirement, feature request, or product decision for ObraRed and no approved spec covers it yet — before any implementation or Plan Mode. Turns a requirements conversation into a spec file at `specs/<YYYY-MM-DD>-<slug>.md` following the project's template, iterates on it with the user, and marks it `approved` once they sign off. Does not implement code and does not itself invoke Plan Mode — after it returns an approved spec, the calling session should start Plan Mode referencing that file (per root CLAUDE.md's spec-driven workflow) before handing off to `senior-nest-developer`/`senior-react-developer`.
 tools: Read, Write, Edit, Bash
-model: sonnet
+model: opus
 ---
 
 # Spec Writer — ObraRed
