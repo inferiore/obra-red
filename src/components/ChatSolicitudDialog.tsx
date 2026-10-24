@@ -13,9 +13,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useMensajesStore, type Mensaje } from "@/store/mensajesStore";
 import { useSolicitudesStore } from "@/store/solicitudesStore";
 import { useAuthStore } from "@/store/authStore";
+import { useToast } from "@/hooks/use-toast";
 import type { SolicitudEstado } from "@/types/solicitud";
 
 const EMPTY_MENSAJES: Mensaje[] = [];
+const INTERVALO_POLLING_MS = 4000;
 
 interface Props {
   solicitudId: string | null;
@@ -34,15 +36,29 @@ export const ChatSolicitudDialog = ({ solicitudId, open, onOpenChange, estado }:
     solicitudId ? s.solicitudes.find((sol) => sol.id === solicitudId) : undefined
   );
   const username = useAuthStore((s) => s.user?.username);
+  const { toast } = useToast();
 
   const [contenido, setContenido] = useState("");
   const [enviando, setEnviando] = useState(false);
 
   useEffect(() => {
-    if (open && solicitudId) {
-      fetchBySolicitud(solicitudId);
-    }
-  }, [open, solicitudId, fetchBySolicitud]);
+    if (!open || !solicitudId) return;
+
+    const cargarMensajes = () => {
+      fetchBySolicitud(solicitudId).catch(() => {
+        toast({
+          title: "No se pudieron cargar los mensajes",
+          description: "Error de conexión con el servidor.",
+          variant: "destructive",
+        });
+      });
+    };
+
+    cargarMensajes();
+    const intervalo = setInterval(cargarMensajes, INTERVALO_POLLING_MS);
+
+    return () => clearInterval(intervalo);
+  }, [open, solicitudId, fetchBySolicitud, toast]);
 
   useEffect(() => {
     if (!open) setContenido("");
