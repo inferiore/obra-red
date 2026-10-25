@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Clock,
   ShieldCheck,
@@ -10,6 +10,7 @@ import {
   Lock,
   LifeBuoy,
   ImageIcon,
+  Video,
 } from "lucide-react";
 import {
   Dialog,
@@ -56,18 +57,30 @@ const CHECKLIST = [
   "Se completó en el tiempo acordado",
 ];
 
+const DURACION_MAX_VIDEO_SEGUNDOS = 30;
+
 export const RevisionTrabajoDialog = ({ solicitud, open, onOpenChange, onAprobar }: Props) => {
   const { toast } = useToast();
   const fetchOne = useSolicitudesStore((s) => s.fetchOne);
   const solicitarCorreccion = useSolicitudesStore((s) => s.solicitarCorreccion);
+  const adjuntarFotos = useSolicitudesStore((s) => s.adjuntarFotos);
   const [zoom, setZoom] = useState<{ label: string; src?: string } | null>(null);
   const [checks, setChecks] = useState<boolean[]>([false, false, false]);
   const [showCorreccion, setShowCorreccion] = useState(false);
   const [comentario, setComentario] = useState("");
+  const [fotosCorreccion, setFotosCorreccion] = useState<File[]>([]);
+  const [videoCorreccion, setVideoCorreccion] = useState<File | null>(null);
+  const [videoError, setVideoError] = useState<string | null>(null);
   const [confirmAprobar, setConfirmAprobar] = useState(false);
   const [confirmDisputa, setConfirmDisputa] = useState(false);
   const [cargandoDetalle, setCargandoDetalle] = useState(false);
   const [enviandoCorreccion, setEnviandoCorreccion] = useState(false);
+
+  // <video> oculto usado únicamente para leer la duración real del video
+  // seleccionado antes de permitir el envío (no se reproduce aquí).
+  const hiddenVideoRef = useRef<HTMLVideoElement>(null);
+  const pendingVideoFile = useRef<File | null>(null);
+  const videoObjectUrlRef = useRef<string | null>(null);
 
   const solicitudId = solicitud?.id;
   useEffect(() => {
@@ -91,6 +104,49 @@ export const RevisionTrabajoDialog = ({ solicitud, open, onOpenChange, onAprobar
     setChecks([false, false, false]);
     setShowCorreccion(false);
     setComentario("");
+    setFotosCorreccion([]);
+    setVideoCorreccion(null);
+    setVideoError(null);
+  };
+
+  const handleFotosCorreccionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    setFotosCorreccion(Array.from(files));
+  };
+
+  const handleVideoCorreccionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    setVideoError(null);
+    setVideoCorreccion(null);
+    if (!file) return;
+
+    if (videoObjectUrlRef.current) {
+      URL.revokeObjectURL(videoObjectUrlRef.current);
+    }
+    const url = URL.createObjectURL(file);
+    videoObjectUrlRef.current = url;
+    pendingVideoFile.current = file;
+    if (hiddenVideoRef.current) {
+      hiddenVideoRef.current.src = url;
+    }
+  };
+
+  const handleVideoLoadedMetadata = () => {
+    const videoEl = hiddenVideoRef.current;
+    const file = pendingVideoFile.current;
+    pendingVideoFile.current = null;
+    if (!videoEl || !file) return;
+
+    if (videoEl.duration > DURACION_MAX_VIDEO_SEGUNDOS) {
+      setVideoError(
+        `El video dura más de ${DURACION_MAX_VIDEO_SEGUNDOS} segundos. Selecciona uno más corto.`
+      );
+      setVideoCorreccion(null);
+    } else {
+      setVideoError(null);
+      setVideoCorreccion(file);
+    }
   };
 
   const handleAprobar = () => {
@@ -113,8 +169,20 @@ export const RevisionTrabajoDialog = ({ solicitud, open, onOpenChange, onAprobar
       });
       return;
     }
+    if (videoError) {
+      toast({
+        title: "Video inválido",
+        description: videoError,
+        variant: "destructive",
+      });
+      return;
+    }
     setEnviandoCorreccion(true);
     try {
+      const archivos = [...fotosCorreccion, ...(videoCorreccion ? [videoCorreccion] : [])];
+      if (archivos.length > 0) {
+        await adjuntarFotos(solicitud.id, "correccion", archivos);
+      }
       await solicitarCorreccion(solicitud.id, comentario.trim());
       toast(
         seAbriraDisputa
@@ -338,6 +406,44 @@ export const RevisionTrabajoDialog = ({ solicitud, open, onOpenChange, onAprobar
                     onChange={(e) => setComentario(e.target.value)}
                     rows={4}
                   />
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    <label className="inline-flex items-center gap-1.5 text-xs font-medium rounded-md border bg-background px-3 py-1.5 cursor-pointer hover:bg-muted/40 transition-colors">
+                      <ImageIcon size={14} />
+                      {fotosCorreccion.length > 0
+                        ? `${fotosCorreccion.length} foto${fotosCorreccion.length > 1 ? "s" : ""} seleccionada${fotosCorreccion.length > 1 ? "s" : ""}`
+                        : "Adjuntar fotos (opcional)"}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        className="hidden"
+                        onChange={handleFotosCorreccionChange}
+                        disabled={enviandoCorreccion}
+                      />
+                    </label>
+                    <label className="inline-flex items-center gap-1.5 text-xs font-medium rounded-md border bg-background px-3 py-1.5 cursor-pointer hover:bg-muted/40 transition-colors">
+                      <Video size={14} />
+                      {videoCorreccion ? videoCorreccion.name : "Adjuntar video (máx. 30s)"}
+                      <input
+                        type="file"
+                        accept="video/*"
+                        className="hidden"
+                        onChange={handleVideoCorreccionChange}
+                        disabled={enviandoCorreccion}
+                      />
+                    </label>
+                  </div>
+                  {videoError && (
+                    <p className="text-xs text-red-600 dark:text-red-400">{videoError}</p>
+                  )}
+                  {/* Oculto: solo se usa para leer la duración real del video antes de permitir el envío. */}
+                  <video
+                    ref={hiddenVideoRef}
+                    className="hidden"
+                    onLoadedMetadata={handleVideoLoadedMetadata}
+                  />
+
                   <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
                     <Button
                       variant="ghost"
@@ -350,7 +456,7 @@ export const RevisionTrabajoDialog = ({ solicitud, open, onOpenChange, onAprobar
                     <Button
                       size="sm"
                       onClick={handleEnviarCorreccion}
-                      disabled={enviandoCorreccion}
+                      disabled={enviandoCorreccion || !!videoError}
                       className={
                         seAbriraDisputa
                           ? "bg-red-600 hover:bg-red-700 text-white"

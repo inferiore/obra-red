@@ -1,6 +1,6 @@
 # Spec: Adjuntar fotos y video al solicitar una corrección
 
-**Status:** approved
+**Status:** implemented
 **Date:** 2026-10-24
 **Area:** both
 

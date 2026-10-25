@@ -18,9 +18,18 @@ export class MulterConfigService implements MulterOptionsFactory {
           cb(null, `${randomUUID()}${extname(file.originalname)}`),
       }),
       fileFilter: (req, file, cb) => {
-        cb(null, /^image\/(jpeg|png|webp)$/.test(file.mimetype));
+        cb(
+          null,
+          /^(image\/(jpeg|png|webp)|video\/(mp4|quicktime|webm))$/.test(
+            file.mimetype,
+          ),
+        );
       },
-      limits: { fileSize: 20 * 1024 * 1024 },
+      // Alineado con el máximo de 25MB validado en FilesController
+      // (ParseFilePipe + MaxFileSizeValidator); si este límite fuera menor,
+      // multer rechazaría archivos de 20-25MB antes de llegar al validator,
+      // con un error distinto al esperado.
+      limits: { fileSize: 25 * 1024 * 1024 },
     };
   }
 }

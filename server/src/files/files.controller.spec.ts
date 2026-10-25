@@ -1,5 +1,6 @@
+import { ParseFilePipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { FilesController } from './files.controller';
+import { FilesController, filesUploadValidators } from './files.controller';
 import { FilesService } from './files.service';
 
 describe('FilesController', () => {
@@ -73,6 +74,40 @@ describe('FilesController', () => {
       await controller.delete(ids);
 
       expect(filesService.delete).toHaveBeenCalledWith(ids);
+    });
+  });
+
+  describe('validación de archivos subidos (ParseFilePipe de POST /files)', () => {
+    const buildPipe = () =>
+      new ParseFilePipe({ validators: filesUploadValidators() });
+
+    it('rechaza un archivo con tipo MIME no permitido', async () => {
+      const pipe = buildPipe();
+      const files = [
+        { mimetype: 'application/pdf', size: 1024 },
+      ] as Express.Multer.File[];
+
+      await expect(pipe.transform(files)).rejects.toThrow();
+    });
+
+    it('rechaza un archivo que excede el tamaño máximo de 25MB', async () => {
+      const pipe = buildPipe();
+      const files = [
+        { mimetype: 'image/jpeg', size: 26 * 1024 * 1024 },
+      ] as Express.Multer.File[];
+
+      await expect(pipe.transform(files)).rejects.toThrow();
+    });
+
+    it('acepta varias fotos válidas junto con un video válido', async () => {
+      const pipe = buildPipe();
+      const files = [
+        { mimetype: 'image/jpeg', size: 1024 },
+        { mimetype: 'image/png', size: 2048 },
+        { mimetype: 'video/mp4', size: 10 * 1024 * 1024 },
+      ] as Express.Multer.File[];
+
+      await expect(pipe.transform(files)).resolves.toBe(files);
     });
   });
 });

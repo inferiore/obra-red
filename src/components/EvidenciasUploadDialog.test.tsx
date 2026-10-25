@@ -3,6 +3,10 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 vi.mock("@/lib/apiClient", () => ({
   apiFetch: vi.fn(),
+  resolveFileUrl: (path: string) =>
+    path.startsWith("http") || path.startsWith("data:")
+      ? path
+      : `http://localhost:3001${path}`,
   ApiError: class ApiError extends Error {
     status: number;
     constructor(message: string, status = 400) {
@@ -172,5 +176,70 @@ describe("EvidenciasUploadDialog - checklist de EPP", () => {
       expect(screen.getByRole("tab", { name: "Antes" })).toBeInTheDocument();
     });
     expect(screen.queryByText("Antes de subir evidencias")).not.toBeInTheDocument();
+  });
+});
+
+describe("EvidenciasUploadDialog - fotos/video adjuntos a la corrección", () => {
+  const solicitudCorrigiendo: Solicitud = {
+    ...baseSolicitud,
+    estado: "corrigiendo",
+    correcciones: ["Falta pintar el marco de la puerta"],
+    correccionesCount: 1,
+    evidenciaAntes: ["data:image/png;base64,antes"],
+    evidenciaDurante: ["data:image/png;base64,durante"],
+    evidenciaDespues: ["data:image/png;base64,despues"],
+  };
+
+  beforeEach(() => {
+    sessionStorage.clear();
+    mockedApiFetch.mockReset();
+    useAuthStore.setState({
+      user: { username: "trabajador1", name: "Trabajador Uno", role: "trabajador" },
+      token: "fake-token",
+    });
+    useSolicitudesStore.setState({ solicitudes: [solicitudCorrigiendo], loading: false });
+  });
+
+  it("pide GET /files?object=correccion y muestra la foto y el video devueltos", async () => {
+    mockedApiFetch.mockImplementation(async (path: string) => {
+      if (path === `/solicitudes/${solicitudCorrigiendo.id}`) {
+        return solicitudCorrigiendo;
+      }
+      if (path === `/files?object=correccion&objectId=${solicitudCorrigiendo.id}`) {
+        return [
+          { id: "file-1", name: "foto1.jpg", path: "uploads/foto1.jpg", object: "correccion", objectId: solicitudCorrigiendo.id },
+          { id: "file-2", name: "video1.mp4", path: "uploads/video1.mp4", object: "correccion", objectId: solicitudCorrigiendo.id },
+        ];
+      }
+      throw new Error(`ruta no mockeada en el test: ${path}`);
+    });
+
+    render(<EvidenciasUploadDialogHarness solicitudId="sol-1" open />);
+
+    expect(await screen.findByText("Fotos y video adjuntos por el cliente")).toBeInTheDocument();
+
+    const foto = await screen.findByAltText("foto1.jpg");
+    expect(foto).toHaveAttribute("src", expect.stringContaining("/uploads/foto1.jpg"));
+
+    const video = document.querySelector("video[controls]") as HTMLVideoElement;
+    expect(video).toBeTruthy();
+    expect(video.getAttribute("src")).toContain("/uploads/video1.mp4");
+  });
+
+  it("no muestra la sección de adjuntos si /files no devuelve nada para esa corrección", async () => {
+    mockedApiFetch.mockImplementation(async (path: string) => {
+      if (path === `/solicitudes/${solicitudCorrigiendo.id}`) {
+        return solicitudCorrigiendo;
+      }
+      if (path === `/files?object=correccion&objectId=${solicitudCorrigiendo.id}`) {
+        return [];
+      }
+      throw new Error(`ruta no mockeada en el test: ${path}`);
+    });
+
+    render(<EvidenciasUploadDialogHarness solicitudId="sol-1" open />);
+
+    await screen.findByText("Falta pintar el marco de la puerta");
+    expect(screen.queryByText("Fotos y video adjuntos por el cliente")).not.toBeInTheDocument();
   });
 });

@@ -26,9 +26,14 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import type { Solicitud } from "@/types/solicitud";
-import { useSolicitudesStore } from "@/store/solicitudesStore";
+import { useSolicitudesStore, type ArchivoAdjunto } from "@/store/solicitudesStore";
 import { useAuthStore } from "@/store/authStore";
-import { ApiError } from "@/lib/apiClient";
+import { ApiError, resolveFileUrl } from "@/lib/apiClient";
+
+const EXTENSIONES_VIDEO = [".mp4", ".mov", ".webm", ".avi", ".mkv"];
+
+const esArchivoDeVideo = (path: string) =>
+  EXTENSIONES_VIDEO.some((ext) => path.toLowerCase().endsWith(ext));
 
 const ETAPAS = [
   { key: "antes" as const, label: "Antes", desc: "Estado inicial del lugar" },
@@ -93,6 +98,8 @@ export const EvidenciasUploadDialog = ({
   const subirEvidenciaDisputa = useSolicitudesStore((s) => s.subirEvidenciaDisputa);
   const abrirDisputa = useSolicitudesStore((s) => s.abrirDisputa);
   const fetchOne = useSolicitudesStore((s) => s.fetchOne);
+  const fetchArchivosCorreccion = useSolicitudesStore((s) => s.fetchArchivosCorreccion);
+  const [archivosCorreccion, setArchivosCorreccion] = useState<ArchivoAdjunto[]>([]);
   const [evidencias, setEvidencias] = useState<Record<Etapa, string[]>>({
     antes: [],
     durante: [],
@@ -137,6 +144,19 @@ export const EvidenciasUploadDialog = ({
       fetchOne(solicitudId).finally(() => setCargandoDetalle(false));
     }
   }, [open, solicitudId, fetchOne]);
+
+  // Fotos/video que el cliente adjuntó al pedir la corrección (vía /files,
+  // object=correccion) — solo aplican mientras la solicitud está en
+  // "corrigiendo", que es cuando se muestra el bloque de comentarios arriba.
+  useEffect(() => {
+    if (!open || !solicitudId || solicitud?.estado !== "corrigiendo") {
+      setArchivosCorreccion([]);
+      return;
+    }
+    fetchArchivosCorreccion(solicitudId)
+      .then((archivos) => setArchivosCorreccion(Array.isArray(archivos) ? archivos : []))
+      .catch(() => setArchivosCorreccion([]));
+  }, [open, solicitudId, solicitud?.estado, fetchArchivosCorreccion]);
 
   // Deriva si el gate de EPP debe mostrarse: "primera vez" no se guarda en un
   // flag propio, se deriva de si ya existe evidencia real (ver spec). Ya
@@ -183,6 +203,18 @@ export const EvidenciasUploadDialog = ({
   const mostrarTabDisputa =
     solicitud.estado === "disputa" ||
     (solicitud.evidenciaDisputa?.length ?? 0) > 0;
+
+  // El path que devuelve GET /files no trae el "/" inicial que sí incluye la
+  // respuesta de POST /files (ver server/src/files/files.service.ts), así que
+  // se normaliza antes de pasarlo a resolveFileUrl.
+  const resolverRutaArchivoCorreccion = (path: string) =>
+    resolveFileUrl(path.startsWith("/") ? path : `/${path}`);
+  const fotosCorreccion = archivosCorreccion.filter(
+    (archivo) => !esArchivoDeVideo(archivo.path)
+  );
+  const videoCorreccion = archivosCorreccion.find((archivo) =>
+    esArchivoDeVideo(archivo.path)
+  );
 
   // Gate de EPP: solo aplica en el flujo normal del trabajador y mientras no
   // se haya confirmado (ver efecto de arriba para cómo se deriva/recuerda).
@@ -379,6 +411,33 @@ export const EvidenciasUploadDialog = ({
                     {comentario}
                   </p>
                 ))}
+
+                {(fotosCorreccion.length > 0 || videoCorreccion) && (
+                  <div className="pt-2 border-t border-orange-200 dark:border-orange-500/30 space-y-2">
+                    <p className="text-[10px] uppercase tracking-wide font-semibold text-orange-800/80 dark:text-orange-300/80">
+                      Fotos y video adjuntos por el cliente
+                    </p>
+                    {fotosCorreccion.length > 0 && (
+                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                        {fotosCorreccion.map((foto) => (
+                          <img
+                            key={foto.id}
+                            src={resolverRutaArchivoCorreccion(foto.path)}
+                            alt={foto.name}
+                            className="aspect-square rounded-lg border bg-muted object-cover w-full h-full"
+                          />
+                        ))}
+                      </div>
+                    )}
+                    {videoCorreccion && (
+                      <video
+                        controls
+                        src={resolverRutaArchivoCorreccion(videoCorreccion.path)}
+                        className="w-full max-h-64 rounded-lg border bg-muted"
+                      />
+                    )}
+                  </div>
+                )}
               </div>
             )}
 

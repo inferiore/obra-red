@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { File } from './files.entity';
 import { In, Repository } from 'typeorm';
@@ -21,6 +21,13 @@ export class FilesService {
     objectId: string,
     files: Array<Express.Multer.File>,
   ) {
+    const videosCount = files.filter((file) =>
+      file.mimetype?.startsWith('video/'),
+    ).length;
+    if (videosCount > 1) {
+      throw new BadRequestException('Solo se permite un video por envío');
+    }
+
     const filesObject = files.map((item) => {
       return {
         name: item.filename,

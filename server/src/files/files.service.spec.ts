@@ -1,3 +1,4 @@
+import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { In } from 'typeorm';
@@ -103,6 +104,33 @@ describe('FilesService', () => {
         expect.objectContaining({ name: 'b.png', path: 'uploads/b.png' }),
       ]);
       expect(filesRepo.save).toHaveBeenCalledTimes(1);
+    });
+
+    it('persiste varias fotos junto con un único video correctamente', async () => {
+      const files = [
+        { filename: 'foto1.jpg', path: 'uploads/foto1.jpg', mimetype: 'image/jpeg' },
+        { filename: 'foto2.png', path: 'uploads/foto2.png', mimetype: 'image/png' },
+        { filename: 'video1.mp4', path: 'uploads/video1.mp4', mimetype: 'video/mp4' },
+      ] as Express.Multer.File[];
+
+      await service.store('correccion', 'cor-1', files);
+
+      const registrosCreados = filesRepo.create.mock.calls[0][0];
+      expect(registrosCreados).toHaveLength(3);
+      expect(filesRepo.save).toHaveBeenCalledTimes(1);
+    });
+
+    it('rechaza la subida si hay más de un video en el mismo envío', async () => {
+      const files = [
+        { filename: 'video1.mp4', path: 'uploads/video1.mp4', mimetype: 'video/mp4' },
+        { filename: 'video2.mov', path: 'uploads/video2.mov', mimetype: 'video/quicktime' },
+      ] as Express.Multer.File[];
+
+      await expect(service.store('correccion', 'cor-1', files)).rejects.toThrow(
+        new BadRequestException('Solo se permite un video por envío'),
+      );
+      expect(filesRepo.create).not.toHaveBeenCalled();
+      expect(filesRepo.save).not.toHaveBeenCalled();
     });
   });
 

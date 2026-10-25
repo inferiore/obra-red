@@ -3,6 +3,17 @@ import { apiFetch } from "@/lib/apiClient";
 import type { Solicitud, SolicitudEstado } from "@/types/solicitud";
 import { useAuthStore } from "@/store/authStore";
 
+// Forma de lo que devuelve GET /files?object=&objectId= — ver
+// server/src/files/files.entity.ts (fila persistida por POST /files, no un
+// string suelto: trae `path` relativo a /uploads además del `name` original).
+export interface ArchivoAdjunto {
+  id: string;
+  name: string;
+  path: string;
+  object: string;
+  objectId: string;
+}
+
 interface SolicitudesState {
   solicitudes: Solicitud[];
   loading: boolean;
@@ -66,6 +77,7 @@ interface SolicitudesState {
     object: string,
     file: File[]
   ) => Promise<string[]>;
+  fetchArchivosCorreccion: (solicitudId: string) => Promise<ArchivoAdjunto[]>;
 }
 
 const authToken = () => useAuthStore.getState().token;
@@ -245,4 +257,13 @@ export const useSolicitudesStore = create<SolicitudesState>()((set, get) => ({
     });
     return path;
   },
+
+  // No se guarda en el estado global: es un fetch puntual bajo demanda (igual
+  // que ofertasStore.fetchBySolicitud), no una lista que la vista principal
+  // necesite mantener sincronizada.
+  fetchArchivosCorreccion: (solicitudId) =>
+    apiFetch<ArchivoAdjunto[]>(
+      `/files?object=correccion&objectId=${encodeURIComponent(solicitudId)}`,
+      { token: authToken() }
+    ),
 }));
