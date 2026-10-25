@@ -12,6 +12,7 @@ import { User } from '../users/user.entity';
 import { UsersService } from '../users/users.service';
 import { NotificacionesService } from '../notificaciones/notificaciones.service';
 import { CreateOfertaDto } from './dto/create-oferta.dto';
+import { generarCodigoVerificacion } from '../solicitudes/verificacion-codigo.util';
 
 export interface OfertaEnriquecida {
   id: string;
@@ -191,6 +192,9 @@ export class OfertasService {
 
       solicitud.estado = 'ejecucion';
       solicitud.trabajadorAsignado = oferta.trabajadorUsername;
+      if (!solicitud.codigoVerificacion) {
+        solicitud.codigoVerificacion = generarCodigoVerificacion();
+      }
       return manager.save(solicitud);
     });
 

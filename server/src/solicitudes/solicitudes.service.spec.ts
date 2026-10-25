@@ -9,6 +9,7 @@ import { SolicitudesService } from './solicitudes.service';
 import { Solicitud } from './solicitud.entity';
 import { OfertasService } from '../ofertas/ofertas.service';
 import { NotificacionesService } from '../notificaciones/notificaciones.service';
+import { UsersService } from '../users/users.service';
 import { UpdateEstadoDto } from './dto/update-estado.dto';
 import { SolicitarCorreccionDto } from './dto/solicitar-correccion.dto';
 import { AbrirDisputaDto } from './dto/abrir-disputa.dto';
@@ -22,6 +23,7 @@ describe('SolicitudesService', () => {
     existeAceptada: jest.Mock;
     eliminarPorSolicitud: jest.Mock;
   };
+  let usersService: { findByUsername: jest.Mock };
 
   beforeEach(async () => {
     repo = {
@@ -35,6 +37,7 @@ describe('SolicitudesService', () => {
       existeAceptada: jest.fn().mockResolvedValue(false),
       eliminarPorSolicitud: jest.fn().mockResolvedValue(undefined),
     };
+    usersService = { findByUsername: jest.fn().mockResolvedValue(null) };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -42,6 +45,7 @@ describe('SolicitudesService', () => {
         { provide: getRepositoryToken(Solicitud), useValue: repo },
         { provide: OfertasService, useValue: ofertasService },
         { provide: NotificacionesService, useValue: notificacionesService },
+        { provide: UsersService, useValue: usersService },
       ],
     }).compile();
 
@@ -63,6 +67,7 @@ describe('SolicitudesService', () => {
 
       expect(resultado.estado).toBe('ejecucion');
       expect(resultado.trabajadorAsignado).toBe('trabajador1');
+      expect(resultado.codigoVerificacion).toMatch(/^\d{4}$/);
       expect(notificacionesService.crear).toHaveBeenCalledWith(
         'cliente1',
         'solicitud_en_ejecucion',
@@ -71,6 +76,21 @@ describe('SolicitudesService', () => {
         'solicitud',
         id,
       );
+    });
+
+    it('no regenera el código de verificación si la solicitud ya tenía uno', async () => {
+      repo.findOne.mockResolvedValue({
+        id,
+        clienteUsername: 'cliente1',
+        estado: 'disputa',
+        trabajadorAsignado: 'trabajador1',
+        codigoVerificacion: '1234',
+      });
+      const dto: UpdateEstadoDto = { estado: 'ejecucion' };
+
+      const resultado = await service.actualizarEstado(id, dto);
+
+      expect(resultado.codigoVerificacion).toBe('1234');
     });
 
     it('notifica al trabajador asignado cuando el estado pasa a finalizado', async () => {
@@ -122,6 +142,93 @@ describe('SolicitudesService', () => {
       await expect(service.actualizarEstado(id, dto)).resolves.toMatchObject({
         estado: 'ejecucion',
       });
+    });
+  });
+
+  describe('obtenerCodigoVerificacion', () => {
+    const id = 'solicitud-1';
+
+    it('el cliente dueño puede acceder al código', async () => {
+      repo.findOne.mockResolvedValue({
+        id,
+        clienteUsername: 'cliente1',
+        trabajadorAsignado: 'trabajador1',
+        estado: 'ejecucion',
+        codigoVerificacion: '4321',
+      });
+      usersService.findByUsername.mockResolvedValue({
+        username: 'trabajador1',
+        documento: '1234567890',
+      });
+
+      const resultado = await service.obtenerCodigoVerificacion(id, 'cliente1');
+
+      expect(resultado.codigo).toBe('4321');
+      expect(resultado.documentoFallback).toBe('890');
+    });
+
+    it('el trabajador asignado puede acceder al código', async () => {
+      repo.findOne.mockResolvedValue({
+        id,
+        clienteUsername: 'cliente1',
+        trabajadorAsignado: 'trabajador1',
+        estado: 'ejecucion',
+        codigoVerificacion: '4321',
+      });
+      usersService.findByUsername.mockResolvedValue({
+        username: 'trabajador1',
+        documento: '1234567890',
+      });
+
+      const resultado = await service.obtenerCodigoVerificacion(id, 'trabajador1');
+
+      expect(resultado.codigo).toBe('4321');
+    });
+
+    it('lanza ForbiddenException si quien pide el código no es cliente ni trabajador de la solicitud', async () => {
+      repo.findOne.mockResolvedValue({
+        id,
+        clienteUsername: 'cliente1',
+        trabajadorAsignado: 'trabajador1',
+        estado: 'ejecucion',
+        codigoVerificacion: '4321',
+      });
+
+      await expect(
+        service.obtenerCodigoVerificacion(id, 'otro-usuario'),
+      ).rejects.toBeInstanceOf(ForbiddenException);
+    });
+
+    it('lanza ConflictException si la solicitud todavía no tiene código', async () => {
+      repo.findOne.mockResolvedValue({
+        id,
+        clienteUsername: 'cliente1',
+        trabajadorAsignado: 'trabajador1',
+        estado: 'publicado',
+        codigoVerificacion: undefined,
+      });
+
+      await expect(
+        service.obtenerCodigoVerificacion(id, 'cliente1'),
+      ).rejects.toBeInstanceOf(ConflictException);
+    });
+
+    it('omite documentoFallback si el trabajador no tiene documento registrado', async () => {
+      repo.findOne.mockResolvedValue({
+        id,
+        clienteUsername: 'cliente1',
+        trabajadorAsignado: 'trabajador1',
+        estado: 'ejecucion',
+        codigoVerificacion: '4321',
+      });
+      usersService.findByUsername.mockResolvedValue({
+        username: 'trabajador1',
+        documento: undefined,
+      });
+
+      const resultado = await service.obtenerCodigoVerificacion(id, 'cliente1');
+
+      expect(resultado.documentoFallback).toBeUndefined();
     });
   });
 

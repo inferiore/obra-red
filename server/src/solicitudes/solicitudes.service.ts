@@ -17,6 +17,8 @@ import { SolicitarCorreccionDto } from './dto/solicitar-correccion.dto';
 import { AbrirDisputaDto } from './dto/abrir-disputa.dto';
 import { OfertaEnriquecida, OfertasService } from '../ofertas/ofertas.service';
 import { NotificacionesService } from '../notificaciones/notificaciones.service';
+import { UsersService } from '../users/users.service';
+import { generarCodigoVerificacion } from './verificacion-codigo.util';
 
 export type SolicitudConOfertas = Solicitud & { ofertas: OfertaEnriquecida[] };
 
@@ -58,6 +60,7 @@ export class SolicitudesService {
     @InjectRepository(Solicitud) private readonly repo: Repository<Solicitud>,
     private readonly ofertasService: OfertasService,
     private readonly notificacionesService: NotificacionesService,
+    private readonly usersService: UsersService,
   ) {}
 
   private async notificar(
@@ -120,6 +123,34 @@ export class SolicitudesService {
     return solicitud;
   }
 
+  async obtenerCodigoVerificacion(
+    id: string,
+    username: string,
+  ): Promise<{ codigo: string; documentoFallback?: string }> {
+    const solicitud = await this.findOne(id);
+    if (
+      username !== solicitud.clienteUsername &&
+      username !== solicitud.trabajadorAsignado
+    ) {
+      throw new ForbiddenException('No tienes acceso al código de esta solicitud');
+    }
+    if (!solicitud.codigoVerificacion) {
+      throw new ConflictException(
+        'Esta solicitud todavía no tiene código de verificación',
+      );
+    }
+    let documentoFallback: string | undefined;
+    if (solicitud.trabajadorAsignado) {
+      const trabajador = await this.usersService.findByUsername(
+        solicitud.trabajadorAsignado,
+      );
+      if (trabajador?.documento) {
+        documentoFallback = trabajador.documento.slice(-3);
+      }
+    }
+    return { codigo: solicitud.codigoVerificacion, documentoFallback };
+  }
+
   crear(
     dto: CreateSolicitudDto,
     cliente: { username: string; name: string },
@@ -139,6 +170,11 @@ export class SolicitudesService {
     solicitud.estado = dto.estado;
     if (dto.trabajadorUsername)
       solicitud.trabajadorAsignado = dto.trabajadorUsername;
+    // El código es estático por solicitud: se genera una sola vez al entrar
+    // en ejecución y no debe rotar si el estado vuelve a pasar por aquí.
+    if (dto.estado === 'ejecucion' && !solicitud.codigoVerificacion) {
+      solicitud.codigoVerificacion = generarCodigoVerificacion();
+    }
     const guardada = await this.repo.save(solicitud);
 
     if (dto.estado === 'ejecucion') {

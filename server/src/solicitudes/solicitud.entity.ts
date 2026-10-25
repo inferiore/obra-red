@@ -82,6 +82,9 @@ export class Solicitud {
   @Column({ type: 'varchar', nullable: true })
   resolucionDisputa?: 'trabajador' | 'cliente' | 'mitad';
 
+  @Column({ type: 'varchar', nullable: true })
+  codigoVerificacion?: string;
+
   @CreateDateColumn()
   createdAt: Date;
 }

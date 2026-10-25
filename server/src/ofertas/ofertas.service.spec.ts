@@ -230,9 +230,32 @@ describe('OfertasService', () => {
       );
       expect(resultado.estado).toBe('ejecucion');
       expect(resultado.trabajadorAsignado).toBe('trabajador1');
+      expect(resultado.codigoVerificacion).toMatch(/^\d{4}$/);
       expect(manager.save).toHaveBeenCalledWith(
         expect.objectContaining({ estado: 'ejecucion', trabajadorAsignado: 'trabajador1' }),
       );
+    });
+
+    it('no regenera el código de verificación si la solicitud ya tenía uno', async () => {
+      const oferta = {
+        id: ofertaId,
+        solicitudId: 'solicitud-1',
+        trabajadorUsername: 'trabajador1',
+        createdAt: diasAtras(1),
+      };
+      const solicitud = {
+        id: 'solicitud-1',
+        clienteUsername: 'cliente1',
+        estado: 'publicado',
+        codigoVerificacion: '9999',
+      };
+      dataSource.transaction.mockImplementation((cb) =>
+        cb(mockManager(oferta, solicitud)),
+      );
+
+      const resultado = await service.aceptar(ofertaId);
+
+      expect(resultado.codigoVerificacion).toBe('9999');
     });
 
     it('notifica al trabajador y al cliente tras aceptar la oferta', async () => {

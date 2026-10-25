@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Clock,
   MessageSquare,
@@ -10,6 +10,9 @@ import {
   AlertTriangle,
   Camera,
   IdCard,
+  KeyRound,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import {
   Dialog,
@@ -24,6 +27,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { CarnetTrabajadorDialog } from "@/components/CarnetTrabajadorDialog";
 import { puedeVerCarnet } from "@/lib/carnet";
+import { apiFetch, ApiError } from "@/lib/apiClient";
+import { useAuthStore } from "@/store/authStore";
+import { useSolicitudesStore } from "@/store/solicitudesStore";
 import { TIPOS_TRABAJO, ESTADO_LABELS } from "@/types/solicitud";
 import type { Solicitud } from "@/types/solicitud";
 
@@ -70,6 +76,62 @@ export const ProgresoTrabajoDialog = ({
   ]);
   const [draft, setDraft] = useState("");
   const [carnetOpen, setCarnetOpen] = useState(false);
+
+  const user = useAuthStore((s) => s.user);
+  const token = useAuthStore((s) => s.token);
+  const fetchCodigoVerificacion = useSolicitudesStore((s) => s.fetchCodigoVerificacion);
+
+  const [codigo, setCodigo] = useState<string | null>(null);
+  const [documentoFallback, setDocumentoFallback] = useState<string | undefined>(undefined);
+  const [codigoLoading, setCodigoLoading] = useState(false);
+  const [codigoError, setCodigoError] = useState<string | null>(null);
+  const [fallbackOpen, setFallbackOpen] = useState(false);
+  const [trabajadorNombre, setTrabajadorNombre] = useState<string | null>(null);
+
+  const mostrarCodigo =
+    !!solicitud &&
+    (solicitud.estado === "ejecucion" || solicitud.estado === "corrigiendo") &&
+    !!solicitud.trabajadorAsignado;
+
+  useEffect(() => {
+    if (!open || !mostrarCodigo || !solicitud) return;
+
+    let cancelado = false;
+    setCodigoLoading(true);
+    setCodigoError(null);
+    setCodigo(null);
+    setDocumentoFallback(undefined);
+    setTrabajadorNombre(null);
+    setFallbackOpen(false);
+
+    (async () => {
+      try {
+        const res = await fetchCodigoVerificacion(solicitud.id);
+        if (cancelado) return;
+        setCodigo(res.codigo);
+        setDocumentoFallback(res.documentoFallback);
+
+        if (user?.role === "cliente" && res.documentoFallback && solicitud.trabajadorAsignado) {
+          const perfil = await apiFetch<{ name: string }>(
+            `/users/${solicitud.trabajadorAsignado}`,
+            { token }
+          );
+          if (!cancelado) setTrabajadorNombre(perfil.name);
+        }
+      } catch (e) {
+        if (!cancelado) {
+          setCodigoError(e instanceof ApiError ? e.message : "Error de conexión con el servidor");
+        }
+      } finally {
+        if (!cancelado) setCodigoLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelado = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, mostrarCodigo, solicitud?.id, user?.role, token]);
 
   if (!solicitud) return null;
 
@@ -119,6 +181,59 @@ export const ProgresoTrabajoDialog = ({
               </Button>
             )}
           </div>
+
+          {mostrarCodigo && (
+            <div className="mt-3 rounded-xl border bg-card p-3">
+              <div className="flex items-center gap-2 mb-1.5">
+                <KeyRound size={14} className="text-primary" />
+                <p className="text-sm font-semibold">Código de verificación</p>
+              </div>
+              <p className="text-xs text-muted-foreground mb-2">
+                Compara este código con el que ve la otra persona al encontrarse en el sitio.
+              </p>
+
+              {codigoLoading && (
+                <p className="text-sm text-muted-foreground">Cargando código...</p>
+              )}
+              {!codigoLoading && codigoError && (
+                <p className="text-sm text-destructive">{codigoError}</p>
+              )}
+              {!codigoLoading && !codigoError && codigo && (
+                <p className="text-3xl font-bold tracking-[0.3em] tabular-nums text-center py-1">
+                  {codigo}
+                </p>
+              )}
+
+              {!codigoLoading && !codigoError && user?.role === "cliente" && (
+                <>
+                  {documentoFallback ? (
+                    <>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs gap-1 mt-1 px-2"
+                        onClick={() => setFallbackOpen((v) => !v)}
+                      >
+                        {fallbackOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                        ¿El trabajador no puede mostrar el código?
+                      </Button>
+                      {fallbackOpen && (
+                        <p className="text-xs text-foreground/80 mt-1.5 px-2">
+                          {trabajadorNombre ?? "Trabajador"} · documento termina en{" "}
+                          {documentoFallback}
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-xs text-muted-foreground mt-1.5">
+                      No hay verificación alterna disponible para este trabajador.
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
+          )}
         </DialogHeader>
 
         <ScrollArea className="min-h-0">

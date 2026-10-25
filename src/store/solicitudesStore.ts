@@ -78,6 +78,9 @@ interface SolicitudesState {
     file: File[]
   ) => Promise<string[]>;
   fetchArchivosCorreccion: (solicitudId: string) => Promise<ArchivoAdjunto[]>;
+  fetchCodigoVerificacion: (
+    solicitudId: string
+  ) => Promise<{ codigo: string; documentoFallback?: string }>;
 }
 
 const authToken = () => useAuthStore.getState().token;
@@ -264,6 +267,15 @@ export const useSolicitudesStore = create<SolicitudesState>()((set, get) => ({
   fetchArchivosCorreccion: (solicitudId) =>
     apiFetch<ArchivoAdjunto[]>(
       `/files?object=correccion&objectId=${encodeURIComponent(solicitudId)}`,
+      { token: authToken() }
+    ),
+
+  // Tampoco se guarda en el estado global: el código es estático por
+  // solicitud y solo lo necesita ProgresoTrabajoDialog en el momento de
+  // mostrarlo, igual que fetchArchivosCorreccion arriba.
+  fetchCodigoVerificacion: (solicitudId) =>
+    apiFetch<{ codigo: string; documentoFallback?: string }>(
+      `/solicitudes/${solicitudId}/codigo-verificacion`,
       { token: authToken() }
     ),
 }));

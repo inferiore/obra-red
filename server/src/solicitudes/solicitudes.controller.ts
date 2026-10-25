@@ -38,6 +38,14 @@ export class SolicitudesController {
     return this.solicitudesService.findOne(id);
   }
 
+  @Get(':id/codigo-verificacion')
+  obtenerCodigoVerificacion(
+    @Param('id') id: string,
+    @Req() req: { user: JwtPayload },
+  ) {
+    return this.solicitudesService.obtenerCodigoVerificacion(id, req.user.username);
+  }
+
   @Post()
   crear(@Body() dto: CreateSolicitudDto, @Req() req: { user: JwtPayload }) {
     return this.solicitudesService.crear(dto, {
