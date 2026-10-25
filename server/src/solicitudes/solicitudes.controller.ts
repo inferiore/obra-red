@@ -100,7 +100,7 @@ export class SolicitudesController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   resolverDisputa(@Param('id') id: string, @Body() dto: ResolverDisputaDto) {
-    return this.solicitudesService.resolverDisputa(id, dto.estado);
+    return this.solicitudesService.resolverDisputa(id, dto.resolucion);
   }
 
   @Delete(':id')

@@ -404,7 +404,7 @@ describe('SolicitudesService', () => {
   describe('resolverDisputa', () => {
     const id = 'solicitud-1';
 
-    it('resuelve una disputa hacia ejecucion y notifica a ambas partes', async () => {
+    it('reanuda la disputa hacia ejecucion sin setear resolucionDisputa y notifica a ambas partes', async () => {
       repo.findOne.mockResolvedValue({
         id,
         clienteUsername: 'cliente1',
@@ -412,9 +412,10 @@ describe('SolicitudesService', () => {
         estado: 'disputa',
       });
 
-      const resultado = await service.resolverDisputa(id, 'ejecucion');
+      const resultado = await service.resolverDisputa(id, 'reanudar');
 
       expect(resultado.estado).toBe('ejecucion');
+      expect(resultado.resolucionDisputa).toBeUndefined();
       expect(notificacionesService.crear).toHaveBeenCalledWith(
         'cliente1',
         'disputa_resuelta',
@@ -433,7 +434,7 @@ describe('SolicitudesService', () => {
       );
     });
 
-    it('resuelve una disputa hacia finalizado y notifica a ambas partes', async () => {
+    it('resuelve la disputa a favor del trabajador, finaliza y notifica con el mensaje específico', async () => {
       repo.findOne.mockResolvedValue({
         id,
         clienteUsername: 'cliente1',
@@ -441,13 +442,14 @@ describe('SolicitudesService', () => {
         estado: 'disputa',
       });
 
-      const resultado = await service.resolverDisputa(id, 'finalizado');
+      const resultado = await service.resolverDisputa(id, 'trabajador');
 
       expect(resultado.estado).toBe('finalizado');
+      expect(resultado.resolucionDisputa).toBe('trabajador');
       expect(notificacionesService.crear).toHaveBeenCalledWith(
         'cliente1',
         'disputa_resuelta',
-        expect.any(String),
+        expect.stringContaining('liberó al trabajador'),
         id,
         'solicitud',
         id,
@@ -455,7 +457,67 @@ describe('SolicitudesService', () => {
       expect(notificacionesService.crear).toHaveBeenCalledWith(
         'trabajador1',
         'disputa_resuelta',
-        expect.any(String),
+        expect.stringContaining('a tu favor'),
+        id,
+        'solicitud',
+        id,
+      );
+    });
+
+    it('resuelve la disputa a favor del cliente, finaliza y notifica con el mensaje específico', async () => {
+      repo.findOne.mockResolvedValue({
+        id,
+        clienteUsername: 'cliente1',
+        trabajadorAsignado: 'trabajador1',
+        estado: 'disputa',
+      });
+
+      const resultado = await service.resolverDisputa(id, 'cliente');
+
+      expect(resultado.estado).toBe('finalizado');
+      expect(resultado.resolucionDisputa).toBe('cliente');
+      expect(notificacionesService.crear).toHaveBeenCalledWith(
+        'cliente1',
+        'disputa_resuelta',
+        expect.stringContaining('devuelto a ti'),
+        id,
+        'solicitud',
+        id,
+      );
+      expect(notificacionesService.crear).toHaveBeenCalledWith(
+        'trabajador1',
+        'disputa_resuelta',
+        expect.stringContaining('devuelto al cliente'),
+        id,
+        'solicitud',
+        id,
+      );
+    });
+
+    it('resuelve la disputa dividiendo el pago 50/50, finaliza y notifica a ambas partes', async () => {
+      repo.findOne.mockResolvedValue({
+        id,
+        clienteUsername: 'cliente1',
+        trabajadorAsignado: 'trabajador1',
+        estado: 'disputa',
+      });
+
+      const resultado = await service.resolverDisputa(id, 'mitad');
+
+      expect(resultado.estado).toBe('finalizado');
+      expect(resultado.resolucionDisputa).toBe('mitad');
+      expect(notificacionesService.crear).toHaveBeenCalledWith(
+        'cliente1',
+        'disputa_resuelta',
+        expect.stringContaining('50/50'),
+        id,
+        'solicitud',
+        id,
+      );
+      expect(notificacionesService.crear).toHaveBeenCalledWith(
+        'trabajador1',
+        'disputa_resuelta',
+        expect.stringContaining('50/50'),
         id,
         'solicitud',
         id,
@@ -465,7 +527,7 @@ describe('SolicitudesService', () => {
     it('lanza NotFoundException si la solicitud no existe', async () => {
       repo.findOne.mockResolvedValue(null);
 
-      await expect(service.resolverDisputa(id, 'ejecucion')).rejects.toBeInstanceOf(
+      await expect(service.resolverDisputa(id, 'reanudar')).rejects.toBeInstanceOf(
         NotFoundException,
       );
     });
@@ -478,7 +540,7 @@ describe('SolicitudesService', () => {
         estado: 'ejecucion',
       });
 
-      await expect(service.resolverDisputa(id, 'ejecucion')).rejects.toBeInstanceOf(
+      await expect(service.resolverDisputa(id, 'reanudar')).rejects.toBeInstanceOf(
         ConflictException,
       );
     });
@@ -491,7 +553,7 @@ describe('SolicitudesService', () => {
         estado: 'publicado',
       });
 
-      await expect(service.resolverDisputa(id, 'finalizado')).rejects.toBeInstanceOf(
+      await expect(service.resolverDisputa(id, 'trabajador')).rejects.toBeInstanceOf(
         ConflictException,
       );
     });

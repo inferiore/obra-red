@@ -79,6 +79,9 @@ export class Solicitud {
   @Column({ type: 'int', default: 0 })
   correccionesCount: number;
 
+  @Column({ type: 'varchar', nullable: true })
+  resolucionDisputa?: 'trabajador' | 'cliente' | 'mitad';
+
   @CreateDateColumn()
   createdAt: Date;
 }

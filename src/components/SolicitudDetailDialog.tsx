@@ -51,6 +51,15 @@ interface Props {
 
 const hoyISO = () => new Date().toISOString().slice(0, 10);
 
+const RESOLUCION_DISPUTA_TEXTO: Record<
+  NonNullable<Solicitud["resolucionDisputa"]>,
+  string
+> = {
+  trabajador: "Disputa resuelta: pago liberado al trabajador",
+  cliente: "Disputa resuelta: pago devuelto al cliente",
+  mitad: "Disputa resuelta: pago dividido 50/50",
+};
+
 export const SolicitudDetailDialog = ({ solicitud, open, onOpenChange, onOfertaEnviada }: Props) => {
   const { toast } = useToast();
   const crearOferta = useOfertasStore((s) => s.crear);
@@ -166,6 +175,12 @@ export const SolicitudDetailDialog = ({ solicitud, open, onOpenChange, onOfertaE
                   {solicitud.descripcion}
                 </p>
               </section>
+
+              {solicitud.resolucionDisputa && (
+                <p className="text-sm font-medium text-primary">
+                  {RESOLUCION_DISPUTA_TEXTO[solicitud.resolucionDisputa]}
+                </p>
+              )}
 
               <section className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="rounded-lg border p-3">

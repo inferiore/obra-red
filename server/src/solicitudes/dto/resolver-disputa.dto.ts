@@ -1,6 +1,6 @@
 import { IsIn } from 'class-validator';
 
 export class ResolverDisputaDto {
-  @IsIn(['ejecucion', 'finalizado'])
-  estado: 'ejecucion' | 'finalizado';
+  @IsIn(['reanudar', 'trabajador', 'cliente', 'mitad'])
+  resolucion: 'reanudar' | 'trabajador' | 'cliente' | 'mitad';
 }

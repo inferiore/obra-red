@@ -1,6 +1,6 @@
 # Spec: Admin resuelve una disputa eligiendo cómo repartir el pago
 
-**Status:** approved
+**Status:** implemented
 **Date:** 2026-10-24
 **Area:** both
 

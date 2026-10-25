@@ -110,7 +110,7 @@ describe("solicitudesStore", () => {
   });
 
   describe("resolverDisputa", () => {
-    it("hace PATCH a /solicitudes/:id/resolver-disputa con el estado elegido y refresca el store", async () => {
+    it("hace PATCH a /solicitudes/:id/resolver-disputa con la resolución elegida y refresca el store", async () => {
       useSolicitudesStore.setState({
         solicitudes: [crearSolicitud(), crearSolicitud({ id: "sol-2" })],
       });
@@ -119,13 +119,13 @@ describe("solicitudesStore", () => {
 
       const resultado = await useSolicitudesStore
         .getState()
-        .resolverDisputa("sol-1", "ejecucion");
+        .resolverDisputa("sol-1", "reanudar");
 
       expect(mockedApiFetch).toHaveBeenCalledWith(
         "/solicitudes/sol-1/resolver-disputa",
         {
           method: "PATCH",
-          body: { estado: "ejecucion" },
+          body: { resolucion: "reanudar" },
           token: "fake-token",
         }
       );
@@ -137,12 +137,38 @@ describe("solicitudesStore", () => {
       expect(solicitudes.find((s) => s.id === "sol-2")?.estado).toBe("disputa");
     });
 
+    it.each(["trabajador", "cliente", "mitad"] as const)(
+      "hace PATCH con resolucion: '%s' para las resoluciones de reparto de pago",
+      async (resolucion) => {
+        useSolicitudesStore.setState({ solicitudes: [crearSolicitud()] });
+        const actualizada = crearSolicitud({
+          estado: "finalizado",
+          resolucionDisputa: resolucion,
+        });
+        mockedApiFetch.mockResolvedValueOnce(actualizada);
+
+        const resultado = await useSolicitudesStore
+          .getState()
+          .resolverDisputa("sol-1", resolucion);
+
+        expect(mockedApiFetch).toHaveBeenCalledWith(
+          "/solicitudes/sol-1/resolver-disputa",
+          {
+            method: "PATCH",
+            body: { resolucion },
+            token: "fake-token",
+          }
+        );
+        expect(resultado).toEqual(actualizada);
+      }
+    );
+
     it("propaga el error si el PATCH falla, sin modificar el store", async () => {
       useSolicitudesStore.setState({ solicitudes: [crearSolicitud()] });
       mockedApiFetch.mockRejectedValueOnce(new Error("solo se puede resolver desde disputa"));
 
       await expect(
-        useSolicitudesStore.getState().resolverDisputa("sol-1", "finalizado")
+        useSolicitudesStore.getState().resolverDisputa("sol-1", "trabajador")
       ).rejects.toThrow("solo se puede resolver desde disputa");
 
       expect(useSolicitudesStore.getState().solicitudes[0].estado).toBe("disputa");

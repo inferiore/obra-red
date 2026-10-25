@@ -73,6 +73,10 @@ export interface Solicitud {
   fotos?: string[]; // data URLs
   estado: SolicitudEstado;
   trabajadorAsignado?: string;
+  // Solo viene seteado cuando el admin resolvió una disputa con un reparto de
+  // pago (no cuando la resolución fue "reanudar" el trabajo). Ver
+  // PATCH /solicitudes/:id/resolver-disputa.
+  resolucionDisputa?: "trabajador" | "cliente" | "mitad";
   // Sí vienen en el listado (GET /solicitudes) — el backend las embebe
   // batcheadas para evitar que el frontend tenga que pedirlas una por una.
   ofertas?: Oferta[];

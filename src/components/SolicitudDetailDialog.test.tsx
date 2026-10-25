@@ -77,6 +77,30 @@ describe("SolicitudDetailDialog", () => {
     expect(screen.queryByText("Fotos")).not.toBeInTheDocument();
   });
 
+  it("muestra el texto de resolución cuando la solicitud tiene resolucionDisputa", () => {
+    render(
+      <SolicitudDetailDialog
+        solicitud={{ ...solicitudBase, estado: "finalizado", resolucionDisputa: "trabajador" }}
+        open
+        onOpenChange={() => {}}
+      />,
+    );
+
+    expect(
+      screen.getByText("Disputa resuelta: pago liberado al trabajador"),
+    ).toBeInTheDocument();
+  });
+
+  it("no muestra el texto de resolución cuando resolucionDisputa no viene", () => {
+    render(
+      <SolicitudDetailDialog solicitud={solicitudBase} open onOpenChange={() => {}} />,
+    );
+
+    expect(
+      screen.queryByText(/disputa resuelta/i),
+    ).not.toBeInTheDocument();
+  });
+
   it("no revienta cuando `fotos` viene undefined, como la trae GET /solicitudes (listado) al abrir una card", () => {
     // SolicitudesService.findAll excluye la columna `fotos` del `select` por
     // peso (ver server/src/solicitudes/solicitudes.service.ts), así que el

@@ -75,10 +75,12 @@ describe("AdminSolicitudDetail", () => {
     renderDetalle();
 
     expect(await screen.findByRole("button", { name: /reanudar trabajo/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /dar por finalizado/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /pagar 100% al trabajador/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /devolver 100% al cliente/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /dividir 50\/50/i })).toBeInTheDocument();
   });
 
-  it("llama a resolverDisputa con 'ejecucion' al hacer clic en 'Reanudar trabajo'", async () => {
+  it("llama a resolverDisputa con 'reanudar' al hacer clic en 'Reanudar trabajo'", async () => {
     renderDetalle();
 
     const boton = await screen.findByRole("button", { name: /reanudar trabajo/i });
@@ -89,7 +91,58 @@ describe("AdminSolicitudDetail", () => {
         "/solicitudes/sol-1/resolver-disputa",
         expect.objectContaining({
           method: "PATCH",
-          body: { estado: "ejecucion" },
+          body: { resolucion: "reanudar" },
+        })
+      );
+    });
+  });
+
+  it("llama a resolverDisputa con 'trabajador' al hacer clic en 'Pagar 100% al trabajador'", async () => {
+    renderDetalle();
+
+    const boton = await screen.findByRole("button", { name: /pagar 100% al trabajador/i });
+    fireEvent.click(boton);
+
+    await waitFor(() => {
+      expect(mockedApiFetch).toHaveBeenCalledWith(
+        "/solicitudes/sol-1/resolver-disputa",
+        expect.objectContaining({
+          method: "PATCH",
+          body: { resolucion: "trabajador" },
+        })
+      );
+    });
+  });
+
+  it("llama a resolverDisputa con 'cliente' al hacer clic en 'Devolver 100% al cliente'", async () => {
+    renderDetalle();
+
+    const boton = await screen.findByRole("button", { name: /devolver 100% al cliente/i });
+    fireEvent.click(boton);
+
+    await waitFor(() => {
+      expect(mockedApiFetch).toHaveBeenCalledWith(
+        "/solicitudes/sol-1/resolver-disputa",
+        expect.objectContaining({
+          method: "PATCH",
+          body: { resolucion: "cliente" },
+        })
+      );
+    });
+  });
+
+  it("llama a resolverDisputa con 'mitad' al hacer clic en 'Dividir 50/50'", async () => {
+    renderDetalle();
+
+    const boton = await screen.findByRole("button", { name: /dividir 50\/50/i });
+    fireEvent.click(boton);
+
+    await waitFor(() => {
+      expect(mockedApiFetch).toHaveBeenCalledWith(
+        "/solicitudes/sol-1/resolver-disputa",
+        expect.objectContaining({
+          method: "PATCH",
+          body: { resolucion: "mitad" },
         })
       );
     });
@@ -110,7 +163,9 @@ describe("AdminSolicitudDetail", () => {
 
     await screen.findByText("Reparar tubería con fuga");
     expect(screen.queryByRole("button", { name: /reanudar trabajo/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /dar por finalizado/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /pagar 100% al trabajador/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /devolver 100% al cliente/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /dividir 50\/50/i })).not.toBeInTheDocument();
   });
 
   it("muestra la card de Chat con el botón 'Ver conversación'", async () => {

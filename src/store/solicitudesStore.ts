@@ -70,7 +70,7 @@ interface SolicitudesState {
   abrirDisputa: (id: string, comentario: string) => Promise<Solicitud>;
   resolverDisputa: (
     id: string,
-    estado: "ejecucion" | "finalizado"
+    resolucion: "reanudar" | "trabajador" | "cliente" | "mitad"
   ) => Promise<Solicitud>;
   adjuntarFotos: (
     objectId: string,
@@ -228,12 +228,12 @@ export const useSolicitudesStore = create<SolicitudesState>()((set, get) => ({
     }));
     return actualizada;
   },
-  resolverDisputa: async (id, estado) => {
+  resolverDisputa: async (id, resolucion) => {
     const actualizada = await apiFetch<Solicitud>(
       `/solicitudes/${id}/resolver-disputa`,
       {
         method: "PATCH",
-        body: { estado },
+        body: { resolucion },
         token: authToken(),
       }
     );

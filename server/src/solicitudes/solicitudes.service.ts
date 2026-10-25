@@ -20,6 +20,36 @@ import { NotificacionesService } from '../notificaciones/notificaciones.service'
 
 export type SolicitudConOfertas = Solicitud & { ofertas: OfertaEnriquecida[] };
 
+function mensajesResolucionDisputa(
+  resolucion: 'reanudar' | 'trabajador' | 'cliente' | 'mitad',
+): { mensajeCliente: string; mensajeTrabajador: string } {
+  switch (resolucion) {
+    case 'trabajador':
+      return {
+        mensajeCliente: 'La disputa se resolvió: el pago se liberó al trabajador',
+        mensajeTrabajador:
+          'La disputa se resolvió a tu favor: recibirás el pago completo',
+      };
+    case 'cliente':
+      return {
+        mensajeCliente: 'La disputa se resolvió: el pago fue devuelto a ti',
+        mensajeTrabajador:
+          'La disputa se resolvió: el pago fue devuelto al cliente',
+      };
+    case 'mitad':
+      return {
+        mensajeCliente: 'La disputa se resolvió: el pago se dividió 50/50',
+        mensajeTrabajador: 'La disputa se resolvió: el pago se dividió 50/50',
+      };
+    case 'reanudar':
+    default:
+      return {
+        mensajeCliente: 'La disputa de tu solicitud fue resuelta',
+        mensajeTrabajador: 'La disputa de la solicitud en la que trabajas fue resuelta',
+      };
+  }
+}
+
 @Injectable()
 export class SolicitudesService {
   private readonly logger = new Logger(SolicitudesService.name);
@@ -256,19 +286,28 @@ export class SolicitudesService {
 
   async resolverDisputa(
     id: string,
-    estado: 'ejecucion' | 'finalizado',
+    resolucion: 'reanudar' | 'trabajador' | 'cliente' | 'mitad',
   ): Promise<Solicitud> {
     const solicitud = await this.findOne(id);
     if (solicitud.estado !== 'disputa') {
       throw new ConflictException('Esta solicitud no está en disputa');
     }
-    solicitud.estado = estado;
+
+    if (resolucion === 'reanudar') {
+      solicitud.estado = 'ejecucion';
+    } else {
+      solicitud.estado = 'finalizado';
+      solicitud.resolucionDisputa = resolucion;
+    }
     const guardada = await this.repo.save(solicitud);
+
+    const { mensajeCliente, mensajeTrabajador } =
+      mensajesResolucionDisputa(resolucion);
 
     await this.notificar(
       guardada.clienteUsername,
       'disputa_resuelta',
-      'La disputa de tu solicitud fue resuelta',
+      mensajeCliente,
       guardada.id,
       'solicitud',
       guardada.id,
@@ -277,7 +316,7 @@ export class SolicitudesService {
       await this.notificar(
         guardada.trabajadorAsignado,
         'disputa_resuelta',
-        'La disputa de la solicitud en la que trabajas fue resuelta',
+        mensajeTrabajador,
         guardada.id,
         'solicitud',
         guardada.id,

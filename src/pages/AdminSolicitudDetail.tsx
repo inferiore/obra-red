@@ -96,17 +96,28 @@ const AdminSolicitudDetail = () => {
       .finally(() => setCargando(false));
   }, [id, fetchOne, fetchOfertas, fetchMensajes]);
 
-  const handleResolver = async (estado: "ejecucion" | "finalizado") => {
+  const handleResolver = async (
+    resolucion: "reanudar" | "trabajador" | "cliente" | "mitad"
+  ) => {
     if (!id) return;
     setResolviendo(true);
     try {
-      await resolverDisputa(id, estado);
+      await resolverDisputa(id, resolucion);
+      const titulos: Record<typeof resolucion, string> = {
+        reanudar: "Trabajo reanudado",
+        trabajador: "Pago liberado al trabajador",
+        cliente: "Pago devuelto al cliente",
+        mitad: "Pago dividido 50/50",
+      };
+      const descripciones: Record<typeof resolucion, string> = {
+        reanudar: "Se notificó a ambas partes que el trabajo continúa en ejecución.",
+        trabajador: "Se notificó a ambas partes que el pago se liberó al trabajador.",
+        cliente: "Se notificó a ambas partes que el pago se devolvió al cliente.",
+        mitad: "Se notificó a ambas partes que el pago se dividió 50/50.",
+      };
       toast({
-        title: estado === "ejecucion" ? "Trabajo reanudado" : "Solicitud finalizada",
-        description:
-          estado === "ejecucion"
-            ? "Se notificó a ambas partes que el trabajo continúa en ejecución."
-            : "Se notificó a ambas partes que la solicitud quedó finalizada.",
+        title: titulos[resolucion],
+        description: descripciones[resolucion],
       });
     } catch (e) {
       toast({
@@ -191,25 +202,37 @@ const AdminSolicitudDetail = () => {
                   <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-4 space-y-3">
                     <p className="text-sm font-semibold text-destructive">Resolver disputa</p>
                     <p className="text-xs text-muted-foreground">
-                      Elige uno de los dos desenlaces. Ambas partes serán notificadas.
+                      Elige uno de los cuatro desenlaces. Ambas partes serán notificadas.
                     </p>
-                    <div className="flex flex-col sm:flex-row gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <Button
                         size="sm"
                         variant="outline"
-                        className="sm:flex-1"
-                        onClick={() => handleResolver("ejecucion")}
+                        onClick={() => handleResolver("reanudar")}
                         disabled={resolviendo}
                       >
                         Reanudar trabajo
                       </Button>
                       <Button
                         size="sm"
-                        className="sm:flex-1"
-                        onClick={() => handleResolver("finalizado")}
+                        onClick={() => handleResolver("trabajador")}
                         disabled={resolviendo}
                       >
-                        Dar por finalizado
+                        Pagar 100% al trabajador
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => handleResolver("cliente")}
+                        disabled={resolviendo}
+                      >
+                        Devolver 100% al cliente
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => handleResolver("mitad")}
+                        disabled={resolviendo}
+                      >
+                        Dividir 50/50
                       </Button>
                     </div>
                   </div>
