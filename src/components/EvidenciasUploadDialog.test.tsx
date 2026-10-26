@@ -55,8 +55,8 @@ const baseSolicitud: Solicitud = {
   createdAt: "2026-09-01T00:00:00.000Z",
 };
 
-const EPP_LABELS = [
-  "Cascos",
+// Básicos: siempre obligatorios, sin importar el tipo de trabajo.
+const EPP_LABELS_BASICOS = [
   "Guantes",
   "Botas de seguridad",
   "Gafas",
@@ -64,9 +64,21 @@ const EPP_LABELS = [
   "Pantalones largos",
 ];
 
-const marcarTodoElEpp = () => {
-  EPP_LABELS.forEach((label) => {
-    fireEvent.click(screen.getByRole("checkbox", { name: label }));
+// Condicionales: obligatorios solo para tipos de alto riesgo (ver
+// TIPOS_ALTO_RIESGO en el componente); siempre visibles y marcables.
+const EPP_LABELS_CONDICIONALES = ["Cascos", "Protección auditiva"];
+
+const EPP_LABELS = [...EPP_LABELS_BASICOS, ...EPP_LABELS_CONDICIONALES];
+
+// Los checkboxes condicionales muestran un sufijo "(opcional...)" en su
+// texto cuando la solicitud no es de alto riesgo, lo cual cambia su nombre
+// accesible — de ahí el matcher parcial por defecto.
+const getEppCheckbox = (label: string) =>
+  screen.getByRole("checkbox", { name: new RegExp(`^${label}`) });
+
+const marcarBasicosEpp = () => {
+  EPP_LABELS_BASICOS.forEach((label) => {
+    fireEvent.click(getEppCheckbox(label));
   });
 };
 
@@ -94,12 +106,29 @@ describe("EvidenciasUploadDialog - checklist de EPP", () => {
       ),
     ).toBeInTheDocument();
     EPP_LABELS.forEach((label) => {
-      expect(screen.getByText(label)).toBeInTheDocument();
+      expect(getEppCheckbox(label)).toBeInTheDocument();
     });
     expect(screen.queryByRole("tab", { name: "Antes" })).not.toBeInTheDocument();
   });
 
-  it("mantiene deshabilitado 'Confirmar y continuar' hasta marcar los 6 ítems y luego revela las pestañas", async () => {
+  it("protección auditiva aparece en el checklist sin importar el tipo de la solicitud", async () => {
+    const altoRiesgo: Solicitud = {
+      ...baseSolicitud,
+      tipo: "soldadura",
+      evidenciaAntes: [],
+      evidenciaDurante: [],
+      evidenciaDespues: [],
+    };
+    mockedApiFetch.mockResolvedValue(altoRiesgo);
+    useSolicitudesStore.setState({ solicitudes: [altoRiesgo], loading: false });
+
+    render(<EvidenciasUploadDialogHarness solicitudId="sol-1" open />);
+    await screen.findByText("Antes de subir evidencias");
+
+    expect(getEppCheckbox("Protección auditiva")).toBeInTheDocument();
+  });
+
+  it("con un tipo que no es de alto riesgo (plomería), marcar solo los básicos habilita 'Confirmar y continuar'", async () => {
     const sinEvidencia: Solicitud = { ...baseSolicitud, evidenciaAntes: [], evidenciaDurante: [], evidenciaDespues: [] };
     mockedApiFetch.mockResolvedValue(sinEvidencia);
     useSolicitudesStore.setState({ solicitudes: [sinEvidencia], loading: false });
@@ -110,13 +139,15 @@ describe("EvidenciasUploadDialog - checklist de EPP", () => {
     const confirmar = screen.getByRole("button", { name: /confirmar y continuar/i });
     expect(confirmar).toBeDisabled();
 
-    // Marcar solo 5 de los 6 no debe habilitar el botón.
-    EPP_LABELS.slice(0, 5).forEach((label) => {
-      fireEvent.click(screen.getByRole("checkbox", { name: label }));
+    // Marcar solo 4 de los 5 básicos no debe habilitar el botón.
+    EPP_LABELS_BASICOS.slice(0, 4).forEach((label) => {
+      fireEvent.click(getEppCheckbox(label));
     });
     expect(confirmar).toBeDisabled();
 
-    fireEvent.click(screen.getByRole("checkbox", { name: EPP_LABELS[5] }));
+    // El quinto básico habilita el botón sin necesidad de marcar casco ni
+    // protección auditiva, porque plomería no es un tipo de alto riesgo.
+    fireEvent.click(getEppCheckbox(EPP_LABELS_BASICOS[4]));
     expect(confirmar).toBeEnabled();
 
     fireEvent.click(confirmar);
@@ -126,6 +157,52 @@ describe("EvidenciasUploadDialog - checklist de EPP", () => {
     });
     expect(screen.queryByText("Antes de subir evidencias")).not.toBeInTheDocument();
     expect(sessionStorage.getItem("epp-confirmado-sol-1")).toBe("1");
+  });
+
+  it("con un tipo de alto riesgo (albañilería), marcar solo los básicos no alcanza para habilitar el botón", async () => {
+    const altoRiesgo: Solicitud = {
+      ...baseSolicitud,
+      tipo: "albanileria",
+      evidenciaAntes: [],
+      evidenciaDurante: [],
+      evidenciaDespues: [],
+    };
+    mockedApiFetch.mockResolvedValue(altoRiesgo);
+    useSolicitudesStore.setState({ solicitudes: [altoRiesgo], loading: false });
+
+    render(<EvidenciasUploadDialogHarness solicitudId="sol-1" open />);
+    await screen.findByText("Antes de subir evidencias");
+
+    const confirmar = screen.getByRole("button", { name: /confirmar y continuar/i });
+
+    marcarBasicosEpp();
+    expect(confirmar).toBeDisabled();
+
+    fireEvent.click(getEppCheckbox("Cascos"));
+    expect(confirmar).toBeDisabled();
+
+    fireEvent.click(getEppCheckbox("Protección auditiva"));
+    expect(confirmar).toBeEnabled();
+  });
+
+  it("con un tipo de bajo riesgo (pintura), no marcar casco ni protección auditiva igual habilita el botón", async () => {
+    const bajoRiesgo: Solicitud = {
+      ...baseSolicitud,
+      tipo: "pintura",
+      evidenciaAntes: [],
+      evidenciaDurante: [],
+      evidenciaDespues: [],
+    };
+    mockedApiFetch.mockResolvedValue(bajoRiesgo);
+    useSolicitudesStore.setState({ solicitudes: [bajoRiesgo], loading: false });
+
+    render(<EvidenciasUploadDialogHarness solicitudId="sol-1" open />);
+    await screen.findByText("Antes de subir evidencias");
+
+    const confirmar = screen.getByRole("button", { name: /confirmar y continuar/i });
+
+    marcarBasicosEpp();
+    expect(confirmar).toBeEnabled();
   });
 
   it("no vuelve a pedir el checklist al reabrir el diálogo en la misma sesión tras confirmarlo", async () => {

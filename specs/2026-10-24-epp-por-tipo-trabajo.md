@@ -1,6 +1,6 @@
 # Spec: EPP obligatorio según el tipo de trabajo
 
-**Status:** approved
+**Status:** implemented
 **Date:** 2026-10-24
 **Area:** frontend
 

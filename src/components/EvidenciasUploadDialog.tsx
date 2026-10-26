@@ -25,7 +25,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import type { Solicitud } from "@/types/solicitud";
+import type { Solicitud, TipoTrabajo } from "@/types/solicitud";
 import { useSolicitudesStore, type ArchivoAdjunto } from "@/store/solicitudesStore";
 import { useAuthStore } from "@/store/authStore";
 import { ApiError, resolveFileUrl } from "@/lib/apiClient";
@@ -45,26 +45,34 @@ type Etapa = (typeof ETAPAS)[number]["key"];
 
 // Checklist de EPP (equipo de protección personal): gate único, previo a la
 // primera subida de evidencia de progreso de un trabajador para una
-// solicitud dada — ver specs/2026-09-26-epp-checklist.md.
+// solicitud dada — ver specs/2026-09-26-epp-checklist.md y
+// specs/2026-10-24-epp-por-tipo-trabajo.md (básicos siempre obligatorios;
+// casco/protección auditiva solo obligatorios para tipos de alto riesgo).
 const EPP_ITEMS = [
-  { key: "cascos" as const, label: "Cascos" },
-  { key: "guantes" as const, label: "Guantes" },
-  { key: "botas" as const, label: "Botas de seguridad" },
-  { key: "gafas" as const, label: "Gafas" },
-  { key: "buzo" as const, label: "Suéteres tipo buzo" },
-  { key: "pantalones" as const, label: "Pantalones largos" },
-];
+  { key: "guantes" as const, label: "Guantes", obligatorioSiempre: true },
+  { key: "botas" as const, label: "Botas de seguridad", obligatorioSiempre: true },
+  { key: "gafas" as const, label: "Gafas", obligatorioSiempre: true },
+  { key: "buzo" as const, label: "Suéteres tipo buzo", obligatorioSiempre: true },
+  { key: "pantalones" as const, label: "Pantalones largos", obligatorioSiempre: true },
+  { key: "cascos" as const, label: "Cascos", obligatorioSiempre: false },
+  { key: "proteccionAuditiva" as const, label: "Protección auditiva", obligatorioSiempre: false },
+] as const;
 
 type EppItemKey = (typeof EPP_ITEMS)[number]["key"];
 
 const EPP_CHECKS_INICIAL: Record<EppItemKey, boolean> = {
-  cascos: false,
   guantes: false,
   botas: false,
   gafas: false,
   buzo: false,
   pantalones: false,
+  cascos: false,
+  proteccionAuditiva: false,
 };
+
+// Tipos de trabajo de mayor riesgo: para estos, casco y protección auditiva
+// también son obligatorios (no solo opcionales) antes de continuar.
+const TIPOS_ALTO_RIESGO: TipoTrabajo[] = ["albanileria", "demolicion", "techado", "soldadura"];
 
 const eppSessionKey = (solicitudId: string) => `epp-confirmado-${solicitudId}`;
 
@@ -219,7 +227,10 @@ export const EvidenciasUploadDialog = ({
   // Gate de EPP: solo aplica en el flujo normal del trabajador y mientras no
   // se haya confirmado (ver efecto de arriba para cómo se deriva/recuerda).
   const mostrarChecklistEpp = puedeSubirNormal && !cargandoDetalle && !eppConfirmado;
-  const todosEppMarcados = EPP_ITEMS.every((item) => eppChecks[item.key]);
+  const esAltoRiesgo = solicitud ? TIPOS_ALTO_RIESGO.includes(solicitud.tipo) : false;
+  const todosEppMarcados = EPP_ITEMS.every((item) =>
+    item.obligatorioSiempre || esAltoRiesgo ? eppChecks[item.key] : true,
+  );
 
   const handleConfirmarEpp = () => {
     if (!todosEppMarcados || !solicitudId) return;
@@ -469,6 +480,11 @@ export const EvidenciasUploadDialog = ({
                         }
                       />
                       {item.label}
+                      {!item.obligatorioSiempre && !esAltoRiesgo && (
+                        <span className="text-xs text-muted-foreground">
+                          (opcional para este tipo de trabajo)
+                        </span>
+                      )}
                     </label>
                   ))}
                 </div>
