@@ -111,7 +111,7 @@ describe('PATCH /solicitudes/:id/resolver-disputa (e2e)', () => {
     const res = await request(app.getHttpServer())
       .patch(`/solicitudes/${solicitudId}/resolver-disputa`)
       .set('Authorization', `Bearer ${clienteToken}`)
-      .send({ estado: 'ejecucion' });
+      .send({ resolucion: 'reanudar' });
 
     expect(res.status).toBe(403);
   });
@@ -178,7 +178,7 @@ describe('PATCH /solicitudes/:id/resolver-disputa (e2e)', () => {
     const res = await request(app.getHttpServer())
       .patch(`/solicitudes/${solicitudId}/resolver-disputa`)
       .set('Authorization', `Bearer ${adminToken}`)
-      .send({ estado: 'ejecucion' });
+      .send({ resolucion: 'reanudar' });
 
     expect(res.status).toBe(200);
     expect(res.body.estado).toBe('ejecucion');
