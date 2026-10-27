@@ -14,4 +14,8 @@ export const AppDataSource = new DataSource({
   entities: [User, Solicitud, Oferta, Calificacion, File, Notificacion, Mensaje],
   migrations: ['src/database/migrations/*.ts'],
   synchronize: false,
+  // Keep the CLI datasource (migrations) consistent with the runtime
+  // connection in app.module.ts — see the comment there for why.
+  enableWAL: true,
+  busyTimeout: 5000,
 });

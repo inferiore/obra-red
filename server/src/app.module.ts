@@ -30,6 +30,15 @@ import { MensajesModule } from './mensajes/mensajes.module';
       // In-memory DB (e2e tests) has no migrations to run against, so build
       // its schema straight from the entities instead.
       synchronize: process.env.DB_PATH === ':memory:',
+      // Rollback-journal mode (sqlite's default) takes an exclusive lock on
+      // the whole DB file for the duration of every write, blocking all
+      // concurrent reads until it's released. WAL lets reads proceed while a
+      // write is in flight; busyTimeout makes any writer that still collides
+      // retry for up to 5s instead of failing immediately with SQLITE_BUSY.
+      // TypeORM's sqlite driver runs these as PRAGMAs right after connecting
+      // (see node_modules/typeorm/driver/sqlite/SqliteDriver.js).
+      enableWAL: true,
+      busyTimeout: 5000,
     }),
     AuthModule,
     UsersModule,

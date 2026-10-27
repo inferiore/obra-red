@@ -3,4 +3,6 @@ dist/
 .env
 .env.production
 *.sqlite
+*.sqlite-wal
+*.sqlite-shm
 uploads/
