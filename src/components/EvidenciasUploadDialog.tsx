@@ -226,7 +226,12 @@ export const EvidenciasUploadDialog = ({
 
   // Gate de EPP: solo aplica en el flujo normal del trabajador y mientras no
   // se haya confirmado (ver efecto de arriba para cómo se deriva/recuerda).
-  const mostrarChecklistEpp = puedeSubirNormal && !cargandoDetalle && !eppConfirmado;
+  // No se gatea además por `cargandoDetalle`: el valor por defecto de
+  // `eppConfirmado` (false, reseteado al abrir) ya es la suposición correcta
+  // mientras se carga — si el fetch luego revela que ya hay evidencia previa,
+  // el efecto de arriba lo corrige una sola vez. Gatear también acá producía
+  // un parpadeo (se muestra, se oculta mientras carga, se vuelve a mostrar).
+  const mostrarChecklistEpp = puedeSubirNormal && !eppConfirmado;
   const esAltoRiesgo = solicitud ? TIPOS_ALTO_RIESGO.includes(solicitud.tipo) : false;
   const todosEppMarcados = EPP_ITEMS.every((item) =>
     item.obligatorioSiempre || esAltoRiesgo ? eppChecks[item.key] : true,
