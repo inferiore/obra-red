@@ -1,6 +1,6 @@
 # Spec: Filtros de trazabilidad en el panel de administrador
 
-**Status:** approved
+**Status:** implemented
 **Date:** 2026-10-24
 **Area:** both
 

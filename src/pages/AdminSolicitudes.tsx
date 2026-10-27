@@ -1,11 +1,20 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Flag } from "lucide-react";
+import { ArrowLeft, Flag, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { EstadoBadge } from "@/components/EstadoBadge";
 import { useSolicitudesStore } from "@/store/solicitudesStore";
-import { TIPOS_TRABAJO, type Solicitud } from "@/types/solicitud";
+import { ESTADO_LABELS, TIPOS_TRABAJO, type Solicitud, type SolicitudEstado } from "@/types/solicitud";
 
 const tipoLabel = (tipo: string) =>
   TIPOS_TRABAJO.find((t) => t.value === tipo)?.label ?? tipo;
@@ -19,16 +28,49 @@ const ordenarParaAdmin = (solicitudes: Solicitud[]) =>
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 
+// `trabajadorAsignado` es el username del trabajador, no su nombre. El
+// nombre real viene embebido en `s.ofertas` (ver GET /solicitudes), así que
+// lo resolvemos ahí en lugar de pedirlo aparte; si no hay match, el username
+// sirve de fallback (mismo comportamiento que antes de este filtro).
+const nombreTrabajador = (s: Solicitud): string | undefined => {
+  if (!s.trabajadorAsignado) return undefined;
+  const oferta = s.ofertas?.find((o) => o.trabajadorUsername === s.trabajadorAsignado);
+  return oferta?.nombre ?? s.trabajadorAsignado;
+};
+
 const AdminSolicitudes = () => {
   const navigate = useNavigate();
   const solicitudes = useSolicitudesStore((s) => s.solicitudes);
   const fetchAll = useSolicitudesStore((s) => s.fetchAll);
+
+  const [estadoFiltro, setEstadoFiltro] = useState<SolicitudEstado | "todas">("todas");
+  const [tipoFiltro, setTipoFiltro] = useState<string>("todas");
+  const [busquedaCliente, setBusquedaCliente] = useState("");
+  const [busquedaTrabajador, setBusquedaTrabajador] = useState("");
 
   useEffect(() => {
     fetchAll();
   }, [fetchAll]);
 
   const ordenadas = useMemo(() => ordenarParaAdmin(solicitudes), [solicitudes]);
+
+  const filtradas = useMemo(() => {
+    const qCliente = busquedaCliente.trim().toLowerCase();
+    const qTrabajador = busquedaTrabajador.trim().toLowerCase();
+    return ordenadas.filter((s) => {
+      const matchEstado = estadoFiltro === "todas" || s.estado === estadoFiltro;
+      const matchTipo = tipoFiltro === "todas" || s.tipo === tipoFiltro;
+      const matchCliente =
+        !qCliente ||
+        s.clienteNombre.toLowerCase().includes(qCliente) ||
+        s.clienteUsername.toLowerCase().includes(qCliente);
+      const matchTrabajador =
+        !qTrabajador ||
+        (nombreTrabajador(s)?.toLowerCase().includes(qTrabajador) ?? false) ||
+        (s.trabajadorAsignado?.toLowerCase().includes(qTrabajador) ?? false);
+      return matchEstado && matchTipo && matchCliente && matchTrabajador;
+    });
+  }, [ordenadas, estadoFiltro, tipoFiltro, busquedaCliente, busquedaTrabajador]);
 
   return (
     <div className="min-h-screen bg-gradient-hero">
@@ -53,15 +95,75 @@ const AdminSolicitudes = () => {
           </p>
         </div>
 
-        {ordenadas.length === 0 ? (
+        {/* Filtros */}
+        <div className="flex flex-col gap-3">
+          <Tabs
+            value={estadoFiltro}
+            onValueChange={(v) => setEstadoFiltro(v as SolicitudEstado | "todas")}
+          >
+            <TabsList className="grid grid-cols-4 sm:grid-cols-8 w-full">
+              <TabsTrigger value="todas">Todas</TabsTrigger>
+              {(Object.keys(ESTADO_LABELS) as SolicitudEstado[]).map((estado) => (
+                <TabsTrigger key={estado} value={estado}>
+                  {ESTADO_LABELS[estado]}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            <TabsContent value={estadoFiltro} />
+          </Tabs>
+
+          <div className="flex flex-col md:flex-row gap-3">
+            <Select value={tipoFiltro} onValueChange={setTipoFiltro}>
+              <SelectTrigger className="h-11 w-full md:w-56">
+                <SelectValue placeholder="Tipo de trabajo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">Todos los tipos</SelectItem>
+                {TIPOS_TRABAJO.map((t) => (
+                  <SelectItem key={t.value} value={t.value}>
+                    {t.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <div className="relative flex-1">
+              <Search
+                size={18}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+              />
+              <Input
+                placeholder="Buscar por cliente (nombre o usuario)..."
+                value={busquedaCliente}
+                onChange={(e) => setBusquedaCliente(e.target.value)}
+                className="pl-10 h-11"
+              />
+            </div>
+
+            <div className="relative flex-1">
+              <Search
+                size={18}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+              />
+              <Input
+                placeholder="Buscar por trabajador (nombre o usuario)..."
+                value={busquedaTrabajador}
+                onChange={(e) => setBusquedaTrabajador(e.target.value)}
+                className="pl-10 h-11"
+              />
+            </div>
+          </div>
+        </div>
+
+        {filtradas.length === 0 ? (
           <Card>
             <CardContent className="py-16 text-center text-muted-foreground">
-              No hay solicitudes registradas.
+              No hay solicitudes que coincidan con los filtros.
             </CardContent>
           </Card>
         ) : (
           <div className="space-y-2">
-            {ordenadas.map((s) => (
+            {filtradas.map((s) => (
               <Card
                 key={s.id}
                 className={
@@ -87,7 +189,9 @@ const AdminSolicitudes = () => {
                         <>
                           {" "}
                           · Trabajador:{" "}
-                          <span className="font-medium text-foreground">{s.trabajadorAsignado}</span>
+                          <span className="font-medium text-foreground">
+                            {nombreTrabajador(s)}
+                          </span>
                         </>
                       )}
                     </p>
